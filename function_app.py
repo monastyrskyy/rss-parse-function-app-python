@@ -27,4 +27,4 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     if myTimer.past_due:
         logging.info('The timer is past due!')
 
-    logging.info('Python timer trigger function executed.')
+    logging.info('Another test.')
