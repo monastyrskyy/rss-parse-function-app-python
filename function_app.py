@@ -9,4 +9,4 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
     if myTimer.past_due:
         logging.info('The timer is past due!')
 
-    logging.info('Start of Parallel dev in python.')
+    logging.info('Start of Parallel dev in python. Hello.')
