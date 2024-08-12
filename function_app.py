@@ -192,71 +192,71 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         logging.error(f"Failed to fetch RSS URLs and podcast names from SQL Database. Error: {str(e)}")
         raise
 
-    # # Connect to Azure Blob Storage
-    # blob_service_client = BlobServiceClient(
-    #     account_url=f"https://{storage_account_name}.blob.core.windows.net",
-    #     credential=storage_account_key
-    # )
-    # container_client = blob_service_client.get_container_client(container_name)
+    # Connect to Azure Blob Storage
+    blob_service_client = BlobServiceClient(
+        account_url=f"https://{storage_account_name}.blob.core.windows.net",
+        credential=storage_account_key
+    )
+    container_client = blob_service_client.get_container_client(container_name)
 
-    # def insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language):
-    #     title = title.replace("'", "''")
-    #     description = description.replace("'", "''")
-    #     podcast_title = podcast_title.replace("'", "''")
+    def insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language):
+        title = title.replace("'", "''")
+        description = description.replace("'", "''")
+        podcast_title = podcast_title.replace("'", "''")
 
-    #     check_query = text(f"""
-    #     IF NOT EXISTS (SELECT 1 FROM rss_schema.rss_feed WHERE link = :enclosure_url)
-    #     BEGIN
-    #         INSERT INTO rss_schema.rss_feed (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
-    #         VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
-    #     END
-    #     """)
+        check_query = text(f"""
+        IF NOT EXISTS (SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url)
+        BEGIN
+            INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
+            VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
+        END
+        """)
         
-    #     with engine.connect() as conn:
-    #         conn.execute(check_query, {
-    #             'title': title,
-    #             'description': description,
-    #             'pub_date': pub_date,
-    #             'enclosure_url': enclosure_url,
-    #             'podcast_title': podcast_title,
-    #             'language': language
-    #         })
-    #         print(f"Item inserted or already exists: {title}")
+        with engine.connect() as conn:
+            conn.execute(check_query, {
+                'title': title,
+                'description': description,
+                'pub_date': pub_date,
+                'enclosure_url': enclosure_url,
+                'podcast_title': podcast_title,
+                'language': language
+            })
+            print(f"Item inserted or already exists: {title}")
 
-    # for blob in container_client.list_blobs():
-    #     blob_client = container_client.get_blob_client(blob)
-    #     blob_content = blob_client.download_blob().readall()
-    #     local_path = blob.name
+    for blob in container_client.list_blobs():
+        blob_client = container_client.get_blob_client(blob)
+        blob_content = blob_client.download_blob().readall()
+        local_path = blob.name
 
-    #     # Write blob content to a local file
-    #     with open(local_path, 'wb') as file:
-    #         file.write(blob_content)
+        # Write blob content to a local file
+        with open(local_path, 'wb') as file:
+            file.write(blob_content)
 
-    #     # Load XML file
-    #     try:
-    #         tree = ET.parse(local_path)
-    #         root = tree.getroot()
+        # Load XML file
+        try:
+            tree = ET.parse(local_path)
+            root = tree.getroot()
 
-    #         # Extract podcast title and language
-    #         channel = root.find('.//channel')
-    #         podcast_title = channel.find('title').text
-    #         language = channel.find('language').text
+            # Extract podcast title and language
+            channel = root.find('.//channel')
+            podcast_title = channel.find('title').text
+            language = channel.find('language').text
 
-    #         # Process each item in the RSS feed
-    #         for item in channel.findall('item'):
-    #             title = item.find('title').text
-    #             description = item.find('description').text
-    #             pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
-    #             enclosure_url = item.find('enclosure').get('url')
-    #             duration = int(item.find('itunes:duration').text)
+            # Process each item in the RSS feed
+            for item in channel.findall('item'):
+                title = item.find('title').text
+                description = item.find('description').text
+                pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
+                enclosure_url = item.find('enclosure').get('url')
+                duration = int(item.find('itunes:duration').text)
 
-    #             insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
+                insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
 
-    #         # Delete the local file after processing
-    #         os.remove(local_path)
-    #         print(f"Temporary file deleted successfully: {local_path}")
+            # Delete the local file after processing
+            os.remove(local_path)
+            print(f"Temporary file deleted successfully: {local_path}")
 
-    #     except Exception as e:
-    #         print(f"Failed to process XML file: {local_path}. Error: {e}")
+        except Exception as e:
+            print(f"Failed to process XML file: {local_path}. Error: {e}")
 
-    # print("Function completed for all files in the container.")
+    print("Function completed for all files in the container.")
