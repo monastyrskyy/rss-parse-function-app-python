@@ -243,14 +243,14 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             # Process each item in the RSS feed
             for item in channel.findall('item'):
                 title = item.find('title').text
-                description = item.find('description').text
-                pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
-                enclosure_url = item.find('enclosure').get('url')
-                duration = int(item.find('itunes:duration').text)
                 logging.info(f"title:{title}")
+                description = item.find('description').text
                 logging.info(f"description:{description}")
+                pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
                 logging.info(f"pub_date:{pub_date}")
+                enclosure_url = item.find('enclosure').get('url')
                 logging.info(f"enclosure_url:{enclosure_url}")
+                duration = int(item.find('itunes:duration').text)
                 logging.info(f"duration:{duration}")
                 
 
