@@ -213,9 +213,9 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         logging.info(f"blob_client:{blob_client}")
         logging.info(f"local_path:{local_path}")
 
-        # # Write blob content to a local file
-        # with open(local_path, 'wb') as file:
-        #     file.write(blob_content)
+        # Write blob content to a local file
+        with open(local_path, 'wb') as file:
+            file.write(blob_content)
 
         # # Load XML file
         # try:
