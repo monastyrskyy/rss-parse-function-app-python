@@ -17,11 +17,14 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
 
     # Setup Azure credential
     credential = DefaultAzureCredential()
-    key_vault_name = os.environ["language-app-key-vault"]
+    key_vault_name = os.environ["MyKeyVault"]
     key_vault_uri = f"https://{key_vault_name}.vault.azure.net/"
+    
+    logging.info(f"Key vault name fetched: {key_vault_name}")
 
     # Create a secret client
     client = SecretClient(vault_url=key_vault_uri, credential=credential)
+    logging.info(f"Connected to client: {client}")
 
 #     try:
 #         # Fetch secrets from Azure Key Vault
