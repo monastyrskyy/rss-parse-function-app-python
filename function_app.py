@@ -213,44 +213,44 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         logging.info(f"blob_client:{blob_client}")
         logging.info(f"local_path:{local_path}")
 
-        # Write blob content to a local file
-        with open(local_path, 'wb') as file:
-            file.write(blob_content)
+        # # Write blob content to a local file
+        # with open(local_path, 'wb') as file:
+        #     file.write(blob_content)
 
-        # Load XML file
-        try:
-            tree = ET.parse(local_path)
-            root = tree.getroot()
+        # # Load XML file
+        # try:
+        #     tree = ET.parse(local_path)
+        #     root = tree.getroot()
 
-            # Extract podcast title and language
-            channel = root.find('.//channel')
-            podcast_title = channel.find('title').text
-            language = channel.find('language').text
-            logging.info(f"channel:{channel}")
-            logging.info(f"podcast_title:{podcast_title}")
-            logging.info(f"language:{language}")
+        #     # Extract podcast title and language
+        #     channel = root.find('.//channel')
+        #     podcast_title = channel.find('title').text
+        #     language = channel.find('language').text
+        #     logging.info(f"channel:{channel}")
+        #     logging.info(f"podcast_title:{podcast_title}")
+        #     logging.info(f"language:{language}")
 
-            # Process each item in the RSS feed
-            for item in channel.findall('item'):
-                title = item.find('title').text
-                description = item.find('description').text
-                pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
-                enclosure_url = item.find('enclosure').get('url')
-                duration = int(item.find('itunes:duration').text)
-                logging.info(f"title:{title}")
-                logging.info(f"description:{description}")
-                logging.info(f"pub_date:{pub_date}")
-                logging.info(f"enclosure_url:{enclosure_url}")
-                logging.info(f"duration:{duration}")
+        #     # Process each item in the RSS feed
+        #     for item in channel.findall('item'):
+        #         title = item.find('title').text
+        #         description = item.find('description').text
+        #         pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
+        #         enclosure_url = item.find('enclosure').get('url')
+        #         duration = int(item.find('itunes:duration').text)
+        #         logging.info(f"title:{title}")
+        #         logging.info(f"description:{description}")
+        #         logging.info(f"pub_date:{pub_date}")
+        #         logging.info(f"enclosure_url:{enclosure_url}")
+        #         logging.info(f"duration:{duration}")
                 
 
-                #insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
+        #         #insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
 
-            # Delete the local file after processing
-            os.remove(local_path)
-            print(f"Temporary file deleted successfully: {local_path}")
+        #     # Delete the local file after processing
+        #     os.remove(local_path)
+        #     print(f"Temporary file deleted successfully: {local_path}")
 
-        except Exception as e:
-            print(f"Failed to process XML file: {local_path}. Error: {e}")
+        # except Exception as e:
+        #     print(f"Failed to process XML file: {local_path}. Error: {e}")
 
     print("Function completed for all files in the container.")
