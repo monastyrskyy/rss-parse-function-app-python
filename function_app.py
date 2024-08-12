@@ -1,11 +1,11 @@
 import os
 import logging
-import pyodbc
 import requests
 import shutil
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.storage.blob import BlobServiceClient, BlobClient
+from sqlalchemy import create_engine
 import azure.functions as func
 
 app = func.FunctionApp()
@@ -34,7 +34,6 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
         password = client.get_secret("SQLPass").value
         storage_account_name = client.get_secret("storageAccountName").value
         storage_account_key = client.get_secret("storageAccountKey").value
-        connection_string = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server_name};DATABASE={database_name};UID={username};PWD={password}"
 
         logging.info(f"server_name: {server_name}")
         logging.info(f"database_name: {database_name}")
@@ -42,22 +41,23 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
         logging.info(f"password: {password}")
         logging.info(f"storage_account_name: {storage_account_name}")
         logging.info(f"storage_account_key: {storage_account_key}")
-        logging.info(f"connection_string: {connection_string}")
         
         logging.info("Fetched database connection details from Key Vault successfully.")
     except Exception as e:
         logging.error(f"Failed to fetch secrets from Key Vault. Error: {str(e)}")
         raise
 
-    # Connect to SQL Database
-    try:
-        conn = pyodbc.connect(connection_string)
-        cursor = conn.cursor()
-        cursor.execute("SELECT podcast_name, rss_url FROM dbo.rss_urls")
-        podcasts = cursor.fetchall()
-        conn.close()
+    # Construct the SQLAlchemy connection string
+    connection_string = f"mssql+pymssql://{username}:{password}@{server_name}/{database_name}"
 
-        logging.info(f"RSS URLs and podcast names fetched from SQL Database successfully.{podcasts}")
+    # Connect to SQL Database using SQLAlchemy
+    try:
+        engine = create_engine(connection_string)
+        with engine.connect() as conn:
+            result = conn.execute("SELECT podcast_name, rss_url FROM dbo.rss_urls")
+            podcasts = result.fetchall()
+
+        logging.info(f"RSS URLs and podcast names fetched from SQL Database successfully: {podcasts}")
     except Exception as e:
         logging.error(f"Failed to fetch RSS URLs and podcast names from SQL Database. Error: {str(e)}")
         raise
