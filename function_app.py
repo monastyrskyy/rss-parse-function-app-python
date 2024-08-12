@@ -231,25 +231,25 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             logging.info(f"podcast_title:{podcast_title}")
             logging.info(f"language:{language}")
 
-        #     # Process each item in the RSS feed
-        #     for item in channel.findall('item'):
-        #         title = item.find('title').text
-        #         description = item.find('description').text
-        #         pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
-        #         enclosure_url = item.find('enclosure').get('url')
-        #         duration = int(item.find('itunes:duration').text)
-        #         logging.info(f"title:{title}")
-        #         logging.info(f"description:{description}")
-        #         logging.info(f"pub_date:{pub_date}")
-        #         logging.info(f"enclosure_url:{enclosure_url}")
-        #         logging.info(f"duration:{duration}")
+            # Process each item in the RSS feed
+            for item in channel.findall('item'):
+                title = item.find('title').text
+                description = item.find('description').text
+                pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
+                enclosure_url = item.find('enclosure').get('url')
+                duration = int(item.find('itunes:duration').text)
+                logging.info(f"title:{title}")
+                logging.info(f"description:{description}")
+                logging.info(f"pub_date:{pub_date}")
+                logging.info(f"enclosure_url:{enclosure_url}")
+                logging.info(f"duration:{duration}")
                 
 
         #         #insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
 
-        #     # Delete the local file after processing
-        #     os.remove(local_path)
-        #     print(f"Temporary file deleted successfully: {local_path}")
+            # Delete the local file after processing
+            os.remove(local_path)
+            print(f"Temporary file deleted successfully: {local_path}")
 
         except Exception as e:
             print(f"Failed to process XML file: {local_path}. Error: {e}")
