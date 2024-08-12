@@ -211,7 +211,6 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         blob_content = blob_client.download_blob().readall()
         local_path = blob.name
         logging.info(f"blob_client:{blob_client}")
-        logging.info(f"blob_content:{blob_content}")
         logging.info(f"local_path:{local_path}")
 
         # Write blob content to a local file
