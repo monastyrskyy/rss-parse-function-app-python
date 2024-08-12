@@ -145,9 +145,9 @@ app = func.FunctionApp()
 
 
 
-@app.timer_trigger(schedule="0 0 5 * * *", arg_name="myTimer", run_on_startup=True, use_monitor=False) 
+@app.timer_trigger(schedule="0 0 5 * * *", arg_name="myTimer", run_on_startup=True, use_monitor=False)
 def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
-    
+
     print("reading_in_rss_and_writing_to_sql Function started...")
 
     # Azure Key Vault configuration
@@ -161,7 +161,6 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     storage_account_name = client.get_secret("storageAccountName").value
     storage_account_key = client.get_secret("storageAccountKey").value
     container_name = "xml"
-
     sql_server_name = client.get_secret("SQLServerName").value
     database_name = client.get_secret("DBName").value
     sql_username = client.get_secret("SQLUserName").value
@@ -171,15 +170,22 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     connection_string = f"mssql+pymssql://{sql_username}:{sql_password}@{sql_server_name}/{database_name}"
     engine = create_engine(connection_string)
 
+    # Testing database connection
+    try:
+        conn = engine.connect()
+        logging.info("Database connection successful.")
+    except Exception as e:
+        logging.error(f"Database connection failed: {e}")
+        return  # Stop execution if connection fails
+
     # Connect to Azure Blob Storage
     blob_service_client = BlobServiceClient(
         account_url=f"https://{storage_account_name}.blob.core.windows.net",
-        credential=storage_account_key
-    )
+        credential=storage_account_key)
     container_client = blob_service_client.get_container_client(container_name)
     logging.info(f"container_client:{container_client}")
 
-    def insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language):
+    def insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language):
         title = title.replace("'", "''")
         description = description.replace("'", "''")
         podcast_title = podcast_title.replace("'", "''")
@@ -245,7 +251,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 logging.info(f"duration:{duration}")
                 
 
-                insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
+                #insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
 
             # Delete the local file after processing
             os.remove(local_path)
