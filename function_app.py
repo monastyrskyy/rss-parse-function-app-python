@@ -209,13 +209,14 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     for blob in container_client.list_blobs():
         blob_client = container_client.get_blob_client(blob)
         blob_content = blob_client.download_blob().readall()
-        local_path = blob.name
-        logging.info(f"blob_client:{blob_client}")
-        logging.info(f"local_path:{local_path}")
+        local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
+        logging.info(f"blob_client: {blob_client}")
+        logging.info(f"local_path: {local_path}")
 
         # Write blob content to a local file
         with open(local_path, 'wb') as file:
             file.write(blob_content)
+
 
         # # Load XML file
         # try:
