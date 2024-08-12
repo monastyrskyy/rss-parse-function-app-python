@@ -26,20 +26,28 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
     client = SecretClient(vault_url=key_vault_uri, credential=credential)
     logging.info(f"Connected to client: {client}")
 
-#     try:
-#         # Fetch secrets from Azure Key Vault
-#         server_name = client.get_secret("SQLServerName").value
-#         database_name = client.get_secret("DBName").value
-#         username = client.get_secret("SQLUserName").value
-#         password = client.get_secret("SQLPass").value
-#         storage_account_name = client.get_secret("storageAccountName").value
-#         storage_account_key = client.get_secret("storageAccountKey").value
-#         connection_string = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server_name};DATABASE={database_name};UID={username};PWD={password}"
+    try:
+        # Fetch secrets from Azure Key Vault
+        server_name = client.get_secret("SQLServerName").value
+        database_name = client.get_secret("DBName").value
+        username = client.get_secret("SQLUserName").value
+        password = client.get_secret("SQLPass").value
+        storage_account_name = client.get_secret("storageAccountName").value
+        storage_account_key = client.get_secret("storageAccountKey").value
+        connection_string = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server_name};DATABASE={database_name};UID={username};PWD={password}"
 
-#         logging.info("Fetched database connection details from Key Vault successfully.")
-#     except Exception as e:
-#         logging.error(f"Failed to fetch secrets from Key Vault. Error: {str(e)}")
-#         raise
+        logging.info(f"server_name: {server_name}")
+        logging.info(f"database_name: {database_name}")
+        logging.info(f"username: {username}")
+        logging.info(f"password: {password}")
+        logging.info(f"storage_account_name: {storage_account_name}")
+        logging.info(f"storage_account_key: {storage_account_key}")
+        logging.info(f"connection_string: {connection_string}")
+        
+        logging.info("Fetched database connection details from Key Vault successfully.")
+    except Exception as e:
+        logging.error(f"Failed to fetch secrets from Key Vault. Error: {str(e)}")
+        raise
 
 #     # Connect to SQL Database
 #     try:
