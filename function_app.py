@@ -190,9 +190,6 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         title = title.replace("'", "''")
         description = description.replace("'", "''")
         podcast_title = podcast_title.replace("'", "''")
-        logging.info(f"title:{title}")
-        logging.info(f"description:{description}")
-        logging.info(f"podcast_title:{podcast_title}")
 
         check_query = text(f"""
         IF NOT EXISTS (SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url)
@@ -201,17 +198,19 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
         END
         """)
-        
-        with engine.connect() as conn:
-            conn.execute(check_query, {
-                'title': title,
-                'description': description,
-                'pub_date': pub_date,
-                'enclosure_url': enclosure_url,
-                'podcast_title': podcast_title,
-                'language': language
-            })
+        try:
+            with engine.connect() as conn:
+                conn.execute(check_query, {
+                    'title': title,
+                    'description': description,
+                    'pub_date': pub_date,
+                    'enclosure_url': enclosure_url,
+                    'podcast_title': podcast_title,
+                    'language': language
+                })
             logging.info(f"Item inserted or already exists: {title}")
+        except Exception as e:
+            print(f"The insert didn't work. Error: {e}")
 
     for blob in container_client.list_blobs():
         blob_client = container_client.get_blob_client(blob)
