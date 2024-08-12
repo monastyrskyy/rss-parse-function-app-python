@@ -9,6 +9,7 @@ from azure.keyvault.secrets import SecretClient
 from azure.storage.blob import BlobServiceClient, BlobClient
 from sqlalchemy import create_engine, text
 import azure.functions as func
+from dateutil import parser
 
 app = func.FunctionApp()
 
@@ -237,8 +238,6 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             logging.info(f"channel:{channel}")
             logging.info(f"podcast_title:{podcast_title}")
             logging.info(f"language:{language}")
-            
-            logging.info(f"Is this the issue? channel.findall(item) not working?:{channel.findall('item')}")
 
             # Process each item in the RSS feed
             for item in channel.findall('item'):
@@ -246,7 +245,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 logging.info(f"title:{title}")
                 description = item.find('description').text
                 logging.info(f"description:{description}")
-                pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
+                pub_date = parser.parse(item.find('pubDate').text)
                 logging.info(f"pub_date:{pub_date}")
                 enclosure_url = item.find('enclosure').get('url')
                 logging.info(f"enclosure_url:{enclosure_url}")

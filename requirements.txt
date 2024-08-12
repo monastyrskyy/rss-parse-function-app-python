@@ -9,3 +9,4 @@ azure-storage-blob
 requests
 SQLAlchemy
 pymssql
+python-dateutil
