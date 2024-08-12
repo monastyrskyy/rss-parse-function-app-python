@@ -63,31 +63,31 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
         logging.error(f"Failed to fetch RSS URLs and podcast names from SQL Database. Error: {str(e)}")
         raise
 
-#     # Download and process each podcast
-#     for podcast_name, rss_url in podcasts:
-#         safe_podcast_name = podcast_name.replace(' ', '_')
-#         try:
-#             local_filename = os.path.join("/tmp", f"{safe_podcast_name}.xml")
-#             response = requests.get(rss_url)
-#             with open(local_filename, 'wb') as file:
-#                 file.write(response.content)
-#             logging.info(f"XML file downloaded to {local_filename}")
+    # Download and process each podcast
+    for podcast_name, rss_url in podcasts:
+        safe_podcast_name = podcast_name.replace(' ', '_')
+        try:
+            local_filename = os.path.join("/tmp", f"{safe_podcast_name}.xml")
+            response = requests.get(rss_url)
+            with open(local_filename, 'wb') as file:
+                file.write(response.content)
+            logging.info(f"XML file downloaded to {local_filename}")
 
-#             # Upload to Azure Blob Storage
-#             blob_service_client = BlobServiceClient(account_url=f"https://{storage_account_name}.blob.core.windows.net/", credential=credential)
-#             blob_client = blob_service_client.get_blob_client(container="xml", blob=f"{safe_podcast_name}_with_python.xml")
-#             with open(local_filename, "rb") as data:
-#                 blob_client.upload_blob(data, overwrite=True)
-#             logging.info("XML file has been uploaded to blob storage successfully.")
+            # Upload to Azure Blob Storage
+            blob_service_client = BlobServiceClient(account_url=f"https://{storage_account_name}.blob.core.windows.net/", credential=credential)
+            blob_client = blob_service_client.get_blob_client(container="xml", blob=f"{safe_podcast_name}_with_python.xml")
+            with open(local_filename, "rb") as data:
+                blob_client.upload_blob(data, overwrite=True)
+            logging.info("XML file has been uploaded to blob storage successfully.")
 
-#             # Clean up local file
-#             os.remove(local_filename)
-#             logging.info("Local XML file cleaned up successfully.")
-#         except Exception as e:
-#             logging.error(f"Failed to process podcast '{podcast_name}' with URL '{rss_url}'. Error: {str(e)}")
-#             continue
+            # Clean up local file
+            os.remove(local_filename)
+            logging.info("Local XML file cleaned up successfully.")
+        except Exception as e:
+            logging.error(f"Failed to process podcast '{podcast_name}' with URL '{rss_url}'. Error: {str(e)}")
+            continue
 
-#     logging.info("Function completed successfully.")
+    logging.info("Function completed successfully.")
     
     
     
