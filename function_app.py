@@ -198,6 +198,8 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         credential=storage_account_key
     )
     container_client = blob_service_client.get_container_client(container_name)
+    logging.info(f"blob_service_client: {blob_service_client}")
+    logging.info(f"container_client: {container_client}")
 
     def insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language):
         title = title.replace("'", "''")
