@@ -187,24 +187,24 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         logging.info(f"description:{description}")
         logging.info(f"podcast_title:{podcast_title}")
 
-        # check_query = text(f"""
-        # IF NOT EXISTS (SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url)
-        # BEGIN
-        #     INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
-        #     VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
-        # END
-        # """)
+        check_query = text(f"""
+        IF NOT EXISTS (SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url)
+        BEGIN
+            INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
+            VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
+        END
+        """)
         
-        # with engine.connect() as conn:
-        #     conn.execute(check_query, {
-        #         'title': title,
-        #         'description': description,
-        #         'pub_date': pub_date,
-        #         'enclosure_url': enclosure_url,
-        #         'podcast_title': podcast_title,
-        #         'language': language
-        #     })
-        #     logging.info(f"Item inserted or already exists: {title}")
+        with engine.connect() as conn:
+            conn.execute(check_query, {
+                'title': title,
+                'description': description,
+                'pub_date': pub_date,
+                'enclosure_url': enclosure_url,
+                'podcast_title': podcast_title,
+                'language': language
+            })
+            logging.info(f"Item inserted or already exists: {title}")
 
     for blob in container_client.list_blobs():
         blob_client = container_client.get_blob_client(blob)
@@ -245,7 +245,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 logging.info(f"duration:{duration}")
                 
 
-        #         #insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
+                insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
 
             # Delete the local file after processing
             os.remove(local_path)
