@@ -218,18 +218,18 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             file.write(blob_content)
 
 
-        # # Load XML file
-        # try:
-        #     tree = ET.parse(local_path)
-        #     root = tree.getroot()
+        # Load XML file
+        try:
+            tree = ET.parse(local_path)
+            root = tree.getroot()
 
-        #     # Extract podcast title and language
-        #     channel = root.find('.//channel')
-        #     podcast_title = channel.find('title').text
-        #     language = channel.find('language').text
-        #     logging.info(f"channel:{channel}")
-        #     logging.info(f"podcast_title:{podcast_title}")
-        #     logging.info(f"language:{language}")
+            # Extract podcast title and language
+            channel = root.find('.//channel')
+            podcast_title = channel.find('title').text
+            language = channel.find('language').text
+            logging.info(f"channel:{channel}")
+            logging.info(f"podcast_title:{podcast_title}")
+            logging.info(f"language:{language}")
 
         #     # Process each item in the RSS feed
         #     for item in channel.findall('item'):
@@ -251,7 +251,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         #     os.remove(local_path)
         #     print(f"Temporary file deleted successfully: {local_path}")
 
-        # except Exception as e:
-        #     print(f"Failed to process XML file: {local_path}. Error: {e}")
+        except Exception as e:
+            print(f"Failed to process XML file: {local_path}. Error: {e}")
 
     print("Function completed for all files in the container.")
