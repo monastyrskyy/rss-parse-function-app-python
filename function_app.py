@@ -249,8 +249,6 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 logging.info(f"pub_date:{pub_date}")
                 enclosure_url = item.find('enclosure').get('url')
                 logging.info(f"enclosure_url:{enclosure_url}")
-                duration = int(item.find('itunes:duration').text)
-                logging.info(f"duration:{duration}")
                 
 
                 insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
