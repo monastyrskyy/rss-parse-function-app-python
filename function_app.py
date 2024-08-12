@@ -156,41 +156,20 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     key_vault_uri = f"https://{key_vault_name}.vault.azure.net"
     credential = DefaultAzureCredential()
     client = SecretClient(vault_url=key_vault_uri, credential=credential)
-    logging.info(f"key_vault_uri: {key_vault_uri}")
 
     # Retrieve secrets from Azure Key Vault
     storage_account_name = client.get_secret("storageAccountName").value
     storage_account_key = client.get_secret("storageAccountKey").value
     container_name = "xml"
-    logging.info(f"storageAccountName: {storage_account_name}")
-    logging.info(f"storageAccountKey: {storage_account_key}")
 
     sql_server_name = client.get_secret("SQLServerName").value
     database_name = client.get_secret("DBName").value
     sql_username = client.get_secret("SQLUserName").value
     sql_password = client.get_secret("SQLPass").value
-    logging.info(f"SQLServerName: {sql_server_name}")
-    logging.info(f"DBName: {database_name}")
-    logging.info(f"SQLUserName: {sql_username}")
-    logging.info(f"SQLPass: {sql_password}")
     
     # Construct the SQLAlchemy connection string
     connection_string = f"mssql+pymssql://{sql_username}:{sql_password}@{sql_server_name}/{database_name}"
-
-    # Connect to SQL Database using SQLAlchemy
-    try:
-        engine = create_engine(connection_string)
-        with engine.connect() as conn:
-            query = text("SELECT podcast_name, rss_url FROM dbo.rss_urls")
-            result = conn.execute(query)
-            podcasts = result.fetchall()
-            
-            logging.info(f"podcasts: {podcasts}")
-
-        logging.info(f"RSS URLs and podcast names fetched from SQL Database successfully: {podcasts}")
-    except Exception as e:
-        logging.error(f"Failed to fetch RSS URLs and podcast names from SQL Database. Error: {str(e)}")
-        raise
+    engine = create_engine(connection_string)
 
     # Connect to Azure Blob Storage
     blob_service_client = BlobServiceClient(
@@ -198,37 +177,42 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         credential=storage_account_key
     )
     container_client = blob_service_client.get_container_client(container_name)
-    logging.info(f"blob_service_client: {blob_service_client}")
-    logging.info(f"container_client: {container_client}")
+    logging.info(f"container_client:{container_client}")
 
     def insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language):
         title = title.replace("'", "''")
         description = description.replace("'", "''")
         podcast_title = podcast_title.replace("'", "''")
+        logging.info(f"title:{title}")
+        logging.info(f"description:{description}")
+        logging.info(f"podcast_title:{podcast_title}")
 
-        check_query = text(f"""
-        IF NOT EXISTS (SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url)
-        BEGIN
-            INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
-            VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
-        END
-        """)
+        # check_query = text(f"""
+        # IF NOT EXISTS (SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url)
+        # BEGIN
+        #     INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
+        #     VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
+        # END
+        # """)
         
-        with engine.connect() as conn:
-            conn.execute(check_query, {
-                'title': title,
-                'description': description,
-                'pub_date': pub_date,
-                'enclosure_url': enclosure_url,
-                'podcast_title': podcast_title,
-                'language': language
-            })
-            print(f"Item inserted or already exists: {title}")
+        # with engine.connect() as conn:
+        #     conn.execute(check_query, {
+        #         'title': title,
+        #         'description': description,
+        #         'pub_date': pub_date,
+        #         'enclosure_url': enclosure_url,
+        #         'podcast_title': podcast_title,
+        #         'language': language
+        #     })
+        #     logging.info(f"Item inserted or already exists: {title}")
 
     for blob in container_client.list_blobs():
         blob_client = container_client.get_blob_client(blob)
         blob_content = blob_client.download_blob().readall()
         local_path = blob.name
+        logging.info(f"blob_client:{blob_client}")
+        logging.info(f"blob_content:{blob_content}")
+        logging.info(f"local_path:{local_path}")
 
         # Write blob content to a local file
         with open(local_path, 'wb') as file:
@@ -243,6 +227,9 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             channel = root.find('.//channel')
             podcast_title = channel.find('title').text
             language = channel.find('language').text
+            logging.info(f"channel:{channel}")
+            logging.info(f"podcast_title:{podcast_title}")
+            logging.info(f"language:{language}")
 
             # Process each item in the RSS feed
             for item in channel.findall('item'):
@@ -251,8 +238,14 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 pub_date = datetime.strptime(item.find('pubDate').text, '%a, %d %b %Y %H:%M:%S %Z')
                 enclosure_url = item.find('enclosure').get('url')
                 duration = int(item.find('itunes:duration').text)
+                logging.info(f"title:{title}")
+                logging.info(f"description:{description}")
+                logging.info(f"pub_date:{pub_date}")
+                logging.info(f"enclosure_url:{enclosure_url}")
+                logging.info(f"duration:{duration}")
+                
 
-                insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
+                #insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
 
             # Delete the local file after processing
             os.remove(local_path)
