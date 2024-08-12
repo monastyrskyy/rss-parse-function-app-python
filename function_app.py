@@ -49,18 +49,18 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
         logging.error(f"Failed to fetch secrets from Key Vault. Error: {str(e)}")
         raise
 
-#     # Connect to SQL Database
-#     try:
-#         conn = pyodbc.connect(connection_string)
-#         cursor = conn.cursor()
-#         cursor.execute("SELECT podcast_name, rss_url FROM dbo.rss_urls")
-#         podcasts = cursor.fetchall()
-#         conn.close()
+    # Connect to SQL Database
+    try:
+        conn = pyodbc.connect(connection_string)
+        cursor = conn.cursor()
+        cursor.execute("SELECT podcast_name, rss_url FROM dbo.rss_urls")
+        podcasts = cursor.fetchall()
+        conn.close()
 
-#         logging.info("RSS URLs and podcast names fetched from SQL Database successfully.")
-#     except Exception as e:
-#         logging.error(f"Failed to fetch RSS URLs and podcast names from SQL Database. Error: {str(e)}")
-#         raise
+        logging.info(f"RSS URLs and podcast names fetched from SQL Database successfully.{podcasts}")
+    except Exception as e:
+        logging.error(f"Failed to fetch RSS URLs and podcast names from SQL Database. Error: {str(e)}")
+        raise
 
 #     # Download and process each podcast
 #     for podcast_name, rss_url in podcasts:
