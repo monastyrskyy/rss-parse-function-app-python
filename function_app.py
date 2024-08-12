@@ -5,7 +5,7 @@ import shutil
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.storage.blob import BlobServiceClient, BlobClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import azure.functions as func
 
 app = func.FunctionApp()
@@ -54,7 +54,8 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
     try:
         engine = create_engine(connection_string)
         with engine.connect() as conn:
-            result = conn.execute("SELECT podcast_name, rss_url FROM dbo.rss_urls")
+            query = text("SELECT podcast_name, rss_url FROM dbo.rss_urls")
+            result = conn.execute(query)
             podcasts = result.fetchall()
 
         logging.info(f"RSS URLs and podcast names fetched from SQL Database successfully: {podcasts}")
