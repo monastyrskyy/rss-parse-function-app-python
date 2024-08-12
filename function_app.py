@@ -151,11 +151,12 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     print("reading_in_rss_and_writing_to_sql Function started...")
 
     # Azure Key Vault configuration
-    key_vault_name = "MyKeyVault"
-    kv_uri = f"https://{key_vault_name}.vault.azure.net"
     credential = DefaultAzureCredential()
-    client = SecretClient(vault_url=kv_uri, credential=credential)
-    logging.info(f"kv_uri: {kv_uri}")
+    key_vault_name = os.environ["MyKeyVault"]
+    key_vault_uri = f"https://{key_vault_name}.vault.azure.net"
+    credential = DefaultAzureCredential()
+    client = SecretClient(vault_url=key_vault_uri, credential=credential)
+    logging.info(f"key_vault_uri: {key_vault_uri}")
 
     # Retrieve secrets from Azure Key Vault
     storage_account_name = client.get_secret("storageAccountName").value
