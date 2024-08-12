@@ -253,7 +253,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 logging.info(f"duration:{duration}")
                 
 
-                #insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
+                insert_rss_item(title, description, pub_date, enclosure_url, duration, podcast_title, language)
 
             # Delete the local file after processing
             os.remove(local_path)
