@@ -222,6 +222,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         # Write blob content to a local file
         with open(local_path, 'wb') as file:
             file.write(blob_content)
+            logging.info(f"Successfully written the blob_content.")
 
 
         # Load XML file
@@ -236,6 +237,8 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             logging.info(f"channel:{channel}")
             logging.info(f"podcast_title:{podcast_title}")
             logging.info(f"language:{language}")
+            
+            logging.info(f"Is this the issue? channel.findall(item) not working?:{channel.findall('item')}")
 
             # Process each item in the RSS feed
             for item in channel.findall('item'):
