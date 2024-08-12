@@ -173,11 +173,24 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     logging.info(f"DBName: {database_name}")
     logging.info(f"SQLUserName: {sql_username}")
     logging.info(f"SQLPass: {sql_password}")
+    
+    # Construct the SQLAlchemy connection string
+    connection_string = f"mssql+pymssql://{sql_username}:{sql_password}@{sql_server_name}/{database_name}"
 
-    # SQLAlchemy engine for SQL Server
-    connection_string = f"mssql+pyodbc://{sql_username}:{sql_password}@{sql_server_name}/{database_name}?driver=SQL+Server"
-    engine = create_engine(connection_string)
-    logging.info(f"connection_string: {connection_string}")
+    # Connect to SQL Database using SQLAlchemy
+    try:
+        engine = create_engine(connection_string)
+        with engine.connect() as conn:
+            query = text("SELECT podcast_name, rss_url FROM dbo.rss_urls")
+            result = conn.execute(query)
+            podcasts = result.fetchall()
+            
+            logging.info(f"podcasts: {podcasts}")
+
+        logging.info(f"RSS URLs and podcast names fetched from SQL Database successfully: {podcasts}")
+    except Exception as e:
+        logging.error(f"Failed to fetch RSS URLs and podcast names from SQL Database. Error: {str(e)}")
+        raise
 
     # # Connect to Azure Blob Storage
     # blob_service_client = BlobServiceClient(
