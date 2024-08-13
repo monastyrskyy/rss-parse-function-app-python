@@ -163,17 +163,20 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
         episodes = result.fetchall()  # Fetch all results at once
         logging.info(f"Number of episodes fetched: {len(episodes)}")
         logging.info(f"Episodes: {episodes}")
-
-        podcast_title = episodes['podcast_title'].replace(' ', '-')
-        logging.info(f"podcast_title: {podcast_title}")
-        episode_title = episodes['title'].replace(' ', '-')
-        logging.info(f"episode_title: {episode_title}")
-        rss_url = episodes['link']
-        logging.info(f"rss_url: {rss_url}")
-        folder_path = f"{container_name}/{podcast_title}"
-        logging.info(f"folder_path: {folder_path}")
-        blob_path = f"{folder_path}/{episode_title}_with_python.mp3"
-        logging.info(f"blob_path: {blob_path}")
+        for episode in episodes:
+            logging.info("first nest")
+            for column, value in episode.items():
+                logging.info("second nest")
+        #     podcast_title = episode['podcast_title'].replace(' ', '-')
+        #     logging.info(f"podcast_title: {podcast_title}")
+        #     episode_title = episode['title'].replace(' ', '-')
+        #     logging.info(f"episode_title: {episode_title}")
+        #     rss_url = episode['link']
+        #     logging.info(f"rss_url: {rss_url}")
+        #     folder_path = f"{container_name}/{podcast_title}"
+        #     logging.info(f"folder_path: {folder_path}")
+        #     blob_path = f"{folder_path}/{episode_title}_with_python.mp3"
+        #     logging.info(f"blob_path: {blob_path}")
 
         #     # Download the MP3 file
         #     local_file_path = os.path.join('/tmp', f"{episode_title}.mp3")
