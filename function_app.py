@@ -171,14 +171,6 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     connection_string = f"mssql+pymssql://{sql_username}:{sql_password}@{sql_server_name}/{database_name}"
     engine = create_engine(connection_string)
 
-    # Testing database connection
-    try:
-        conn = engine.connect()
-        logging.info("Database connection successful.")
-    except Exception as e:
-        logging.error(f"Database connection failed: {e}")
-        return  # Stop execution if connection fails
-
     # Connect to Azure Blob Storage
     blob_service_client = BlobServiceClient(
         account_url=f"https://{storage_account_name}.blob.core.windows.net",
@@ -196,7 +188,6 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 # Check if the item already exists
                 check_query = text("SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url")
                 result = conn.execute(check_query, {'enclosure_url': enclosure_url}).fetchone()
-                logging.info(f"Check query has run successfully. Here is the result: {result}")
                 
                 # If the item doesn't exist, insert it
                 if result is None:
@@ -223,13 +214,11 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         blob_client = container_client.get_blob_client(blob)
         blob_content = blob_client.download_blob().readall()
         local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
-        logging.info(f"blob_client: {blob_client}")
-        logging.info(f"local_path: {local_path}")
 
         # Write blob content to a local file
         with open(local_path, 'wb') as file:
             file.write(blob_content)
-            logging.info(f"Successfully written the blob_content.")
+            #logging.info(f"Successfully written the blob_content.")
 
 
         # Load XML file
@@ -241,26 +230,18 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             channel = root.find('.//channel')
             podcast_title = channel.find('title').text
             language = channel.find('language').text
-            logging.info(f"channel:{channel}")
-            logging.info(f"podcast_title:{podcast_title}")
-            logging.info(f"language:{language}")
 
             # Process each item in the RSS feed
             for item in channel.findall('item'):
                 title = item.find('title').text
-                logging.info(f"title:{title}")
                 description = item.find('description').text
                 pub_date = parser.parse(item.find('pubDate').text)
-                logging.info(f"pub_date:{pub_date}")
                 enclosure_url = item.find('enclosure').get('url')
-                logging.info(f"enclosure_url:{enclosure_url}")
                 
                 insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
-                logging.info("This is the line right after the inser_rss_item invocation.")
 
             # Delete the local file after processing
             os.remove(local_path)
-            print(f"Temporary file deleted successfully: {local_path}")
 
         except Exception as e:
             print(f"Failed to process XML file: {local_path}. Error: {e}")
