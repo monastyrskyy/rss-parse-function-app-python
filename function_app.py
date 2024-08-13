@@ -121,7 +121,7 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
     
     
     
-@app.timer_trigger(schedule="0 2/20 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
+@app.timer_trigger(schedule="0 2/5 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
 def mp3_download(myTimer: func.TimerRequest) -> None:
 
     logging.info("MP3 download function started...")
