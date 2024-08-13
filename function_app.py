@@ -82,7 +82,7 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
 
             # Upload to Azure Blob Storage
             blob_service_client = BlobServiceClient(account_url=f"https://{storage_account_name}.blob.core.windows.net/", credential=credential)
-            blob_client = blob_service_client.get_blob_client(container="xml", blob=f"{safe_podcast_name}_with_python.xml")
+            blob_client = blob_service_client.get_blob_client(container="xml", blob=f"{safe_podcast_name}.xml")
             with open(local_filename, "rb") as data:
                 blob_client.upload_blob(data, overwrite=True)
             logging.info("XML file has been uploaded to blob storage successfully.")
