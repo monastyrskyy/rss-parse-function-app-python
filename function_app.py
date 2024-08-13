@@ -191,26 +191,33 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         description = description.replace("'", "''")
         podcast_title = podcast_title.replace("'", "''")
 
-        check_query = text(f"""
-        IF NOT EXISTS (SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url)
-        BEGIN
-            INSERT INTO rss_schema.rss_feed_python (title)--, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
-            VALUES (:title)--, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
-        END
-        """)
         try:
             with engine.connect() as conn:
-                conn.execute(check_query, {
-                    'title': title#,
-                    # 'description': description,
-                    # 'pub_date': pub_date,
-                    # 'enclosure_url': enclosure_url,
-                    # 'podcast_title': podcast_title,
-                    # 'language': language
-                })
-            logging.info(f"Item inserted or already exists: {title}")
+                # Check if the item already exists
+                check_query = text("SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url")
+                result = conn.execute(check_query, {'enclosure_url': enclosure_url}).fetchone()
+                logging.info(f"Check query has run successfully. Here is the result: {result}")
+                
+                # If the item doesn't exist, insert it
+                if result is None:
+                    insert_query = text("""
+                        INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
+                        VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
+                    """)
+                    conn.execute(insert_query, {
+                        'title': title,
+                        'description': description,
+                        'pub_date': pub_date,
+                        'enclosure_url': enclosure_url,
+                        'podcast_title': podcast_title,
+                        'language': language
+                    })
+                    logging.info(f"Item inserted: {title}")
+                else:
+                    logging.info(f"Item already exists: {title}")
         except Exception as e:
-            print(f"The insert didn't work. Error: {e}")
+            logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
+    
 
     for blob in container_client.list_blobs():
         blob_client = container_client.get_blob_client(blob)
