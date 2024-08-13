@@ -165,6 +165,12 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
         logging.info(f"Episodes: {episodes}")
         for episode in episodes:
             logging.info("first nest")
+            podcast_title = episode[11].replace(' ', '-') if episode[11] else 'unknown_podcast'
+            logging.info(f"podcast_title: {podcast_title}")
+            episode_title = episode[1].replace(' ', '-') if episode[1] else 'unknown_title'
+            logging.info(f"episode_title: {episode_title}")
+            rss_url = episode[5]
+            logging.info(f"rss_url: {rss_url}")
             podcast_title = episode['podcast_title'].replace(' ', '-')
             logging.info(f"podcast_title: {podcast_title}")
             episode_title = episode['title'].replace(' ', '-')
