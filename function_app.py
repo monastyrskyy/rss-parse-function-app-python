@@ -271,13 +271,13 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         try:
             with engine.begin() as conn:
                 # Check if the item already exists
-                check_query = text("SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url")
+                check_query = text("SELECT 1 FROM rss_schema.rss_feed WHERE link = :enclosure_url")
                 result = conn.execute(check_query, {'enclosure_url': enclosure_url}).fetchone()
                 
                 # If the item doesn't exist, insert it
                 if result is None:
                     insert_query = text("""
-                        INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
+                        INSERT INTO rss_schema.rss_feed (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
                         VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
                     """)
                     conn.execute(insert_query, {
