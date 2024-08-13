@@ -11,10 +11,6 @@ from sqlalchemy import create_engine, text
 import azure.functions as func
 from dateutil import parser
 
-logging.basicConfig(level=logging.WARNING)
-logging.getLogger('azure.core.pipeline.policies').setLevel(logging.WARNING)
-logging.getLogger('azure.core.pipeline.transport').setLevel(logging.WARNING)
-
 app = func.FunctionApp()
 
 @app.schedule(schedule="0 0 3 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
@@ -200,7 +196,7 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
 
             # Update SQL database
             update_query = text(f"""
-            UPDATE rss_schema.rss_feed SET download_flag = 'Y', download_dt = GETDATE() WHERE link = :rss_url;
+            UPDATE rss_schema.rss_feed SET download_flag = 'Y', download_dt = GETDATE() WHERE id = {episode[0]};
             """)
             connection.execute(update_query, {'rss_url': rss_url})
             logging.info("query updated")
