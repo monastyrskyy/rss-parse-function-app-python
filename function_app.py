@@ -175,7 +175,7 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
             logging.info(f"rss_url: {rss_url}")
             folder_path = f"{container_name}/{podcast_title}"
             logging.info(f"folder_path: {folder_path}")
-            blob_path = f"with_python/{folder_path}/{episode_title}_with_python.mp3"
+            blob_path = f"{folder_path}/{episode_title}.mp3"
             logging.info(f"blob_path: {blob_path}")
 
             # Download the MP3 file
