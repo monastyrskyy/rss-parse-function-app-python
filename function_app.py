@@ -194,16 +194,16 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
                 blob_client.upload_blob(data, overwrite=True)
             logging.info("blob_client uploaded to blob storage")
             
-        #     # Clean up the local file
-        #     os.remove(local_file_path)
-        #     logging.info("file removed locally")
+            # Clean up the local file
+            os.remove(local_file_path)
+            logging.info("file removed locally")
 
-        #     # Update SQL database
-        #     update_query = text(f"""
-        #     UPDATE rss_schema.rss_feed SET download_flag = 'Y', download_dt = GETDATE() WHERE link = :rss_url;
-        #     """)
-        #     connection.execute(update_query, {'rss_url': rss_url})
-        #     logging.info("query updated")
+            # Update SQL database
+            update_query = text(f"""
+            UPDATE rss_schema.rss_feed SET download_flag = 'Y', download_dt = GETDATE() WHERE link = :rss_url;
+            """)
+            connection.execute(update_query, {'rss_url': rss_url})
+            logging.info("query updated")
 
     logging.info("Process completed successfully.")
 
