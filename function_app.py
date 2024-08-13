@@ -155,7 +155,7 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
     """)
     logging.info("Query defined without issues.")
 
-    with engine.connect() as connection:
+    with engine.begin() as connection:
         result = connection.execute(query)
         logging.info(f"Query executed without issues: {result}")
         episodes = result.fetchall()  # Fetch all results at once
