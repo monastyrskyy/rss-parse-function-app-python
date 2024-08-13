@@ -11,6 +11,8 @@ from sqlalchemy import create_engine, text
 import azure.functions as func
 from dateutil import parser
 
+logging.basicConfig(level=logging.WARNING)
+
 app = func.FunctionApp()
 
 # @app.schedule(schedule="0 0 3 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
@@ -153,35 +155,49 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
     WHERE download_flag = 'N'
     ORDER BY pubDate DESC;
     """)
+    logging.info("Query defined without issues.")
 
     with engine.connect() as connection:
         result = connection.execute(query)
+        logging.info("Query executed without issues..")
         for episode in result:
             podcast_title = episode['podcast_title'].replace(' ', '-')
+            logging.info(f"podcast_title: {podcast_title}")
             episode_title = episode['title'].replace(' ', '-')
+            logging.info(f"episode_title: {episode_title}")
             rss_url = episode['link']
+            logging.info(f"rss_url: {rss_url}")
             folder_path = f"{container_name}/{podcast_title}"
+            logging.info(f"folder_path: {folder_path}")
             blob_path = f"{folder_path}/{episode_title}_with_python.mp3"
+            logging.info(f"blob_path: {blob_path}")
 
             # Download the MP3 file
             local_file_path = os.path.join('/tmp', f"{episode_title}.mp3")
+            logging.info(f"local_file_path: {local_file_path}")
             response = requests.get(rss_url)
+            logging.info("URL downloaded")
             with open(local_file_path, 'wb') as file:
                 file.write(response.content)
+            logging.info("MP3 file written locally")
 
             # Upload the MP3 file to Azure Blob Storage
             blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_path)
+            logging.info(f"blob_client for uploading: {blob_client}")
             with open(local_file_path, "rb") as data:
                 blob_client.upload_blob(data, overwrite=True)
+            logging.info("blob_client uploaded to blob storage")
             
             # Clean up the local file
             os.remove(local_file_path)
+            logging.info("file removed locally")
 
             # Update SQL database
             update_query = text(f"""
             UPDATE rss_schema.rss_feed SET download_flag = 'Y', download_dt = GETDATE() WHERE link = :rss_url;
             """)
             connection.execute(update_query, {'rss_url': rss_url})
+            logging.info("query updated")
 
     logging.info("Process completed successfully.")
 
