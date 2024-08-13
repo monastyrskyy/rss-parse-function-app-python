@@ -164,8 +164,9 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
         logging.info(f"Number of episodes fetched: {len(episodes)}")
         logging.info(f"Episodes: {episodes}")
         for episode in episodes:
+            logging.info("first nest")
             for column, value in episode.items():
-                logging.info(f"{column}: {value}")
+                logging.info("second nest")
         #     podcast_title = episode['podcast_title'].replace(' ', '-')
         #     logging.info(f"podcast_title: {podcast_title}")
         #     episode_title = episode['title'].replace(' ', '-')
