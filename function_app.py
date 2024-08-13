@@ -117,10 +117,77 @@ app = func.FunctionApp()
     
     
     
-# @app.timer_trigger(schedule="0 2/20 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
-# def mp3_download(myTimer: func.TimerRequest) -> None:
+@app.timer_trigger(schedule="0 2/20 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
+def mp3_download(myTimer: func.TimerRequest) -> None:
 
+    logging.info("MP3 download function started...")
 
+    # Azure Key Vault configuration
+    credential = DefaultAzureCredential()
+    key_vault_name = os.environ["MyKeyVault"]
+    key_vault_uri = f"https://{key_vault_name}.vault.azure.net"
+    client = SecretClient(vault_url=key_vault_uri, credential=credential)
+
+    # Retrieve secrets from Azure Key Vault
+    storage_account_name = client.get_secret("storageAccountName").value
+    storage_account_key = client.get_secret("storageAccountKey").value
+    container_name = "xml"  # Assuming you meant 'xml' as per your block, not 'mp3' from previous examples
+    sql_server_name = client.get_secret("SQLServerName").value
+    database_name = client.get_secret("DBName").value
+    sql_username = client.get_secret("SQLUserName").value
+    sql_password = client.get_secret("SQLPass").value
+    
+    # Construct the SQLAlchemy connection string
+    connection_string = f"mssql+pymssql://{sql_username}:{sql_password}@{sql_server_name}/{database_name}"
+    engine = create_engine(connection_string)
+
+    # Connect to Azure Blob Storage
+    blob_service_client = BlobServiceClient(
+        account_url=f"https://{storage_account_name}.blob.core.windows.net/",
+        credential=credential)
+    container_client = blob_service_client.get_container_client(container_name)
+    if not container_client.exists():
+        container_client.create_container()
+    logging.info(f"Blob container client initialized for container: {container_name}")
+
+    # Query for episodes
+    query = text("""
+    SELECT TOP 1 *
+    FROM rss_schema.rss_feed
+    WHERE download_flag = 'N'
+    ORDER BY pubDate DESC;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        for episode in result:
+            podcast_title = episode['podcast_title'].replace(' ', '-')
+            episode_title = episode['title'].replace(' ', '-')
+            rss_url = episode['link']
+            folder_path = f"{container_name}/{podcast_title}"
+            blob_path = f"{folder_path}/{episode_title}_with_python.mp3"
+
+            # Download the MP3 file
+            local_file_path = os.path.join('/tmp', f"{episode_title}.mp3")
+            response = requests.get(rss_url)
+            with open(local_file_path, 'wb') as file:
+                file.write(response.content)
+
+            # Upload the MP3 file to Azure Blob Storage
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_path)
+            with open(local_file_path, "rb") as data:
+                blob_client.upload_blob(data, overwrite=True)
+            
+            # Clean up the local file
+            os.remove(local_file_path)
+
+            # Update SQL database
+            update_query = text(f"""
+            UPDATE rss_schema.rss_feed SET download_flag = 'Y', download_dt = GETDATE() WHERE link = :rss_url;
+            """)
+            connection.execute(update_query, {'rss_url': rss_url})
+
+    logging.info("Process completed successfully.")
 
 
 
@@ -146,104 +213,104 @@ app = func.FunctionApp()
 
 
 
-@app.timer_trigger(schedule="0 0 5 * * *", arg_name="myTimer", run_on_startup=True, use_monitor=False)
-def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
+# @app.timer_trigger(schedule="0 0 5 * * *", arg_name="myTimer", run_on_startup=True, use_monitor=False)
+# def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
 
-    print("reading_in_rss_and_writing_to_sql Function started...")
+#     print("reading_in_rss_and_writing_to_sql Function started...")
 
-    # Azure Key Vault configuration
-    credential = DefaultAzureCredential()
-    key_vault_name = os.environ["MyKeyVault"]
-    key_vault_uri = f"https://{key_vault_name}.vault.azure.net"
-    credential = DefaultAzureCredential()
-    client = SecretClient(vault_url=key_vault_uri, credential=credential)
+#     # Azure Key Vault configuration
+#     credential = DefaultAzureCredential()
+#     key_vault_name = os.environ["MyKeyVault"]
+#     key_vault_uri = f"https://{key_vault_name}.vault.azure.net"
+#     credential = DefaultAzureCredential()
+#     client = SecretClient(vault_url=key_vault_uri, credential=credential)
 
-    # Retrieve secrets from Azure Key Vault
-    storage_account_name = client.get_secret("storageAccountName").value
-    storage_account_key = client.get_secret("storageAccountKey").value
-    container_name = "xml"
-    sql_server_name = client.get_secret("SQLServerName").value
-    database_name = client.get_secret("DBName").value
-    sql_username = client.get_secret("SQLUserName").value
-    sql_password = client.get_secret("SQLPass").value
+#     # Retrieve secrets from Azure Key Vault
+#     storage_account_name = client.get_secret("storageAccountName").value
+#     storage_account_key = client.get_secret("storageAccountKey").value
+#     container_name = "xml"
+#     sql_server_name = client.get_secret("SQLServerName").value
+#     database_name = client.get_secret("DBName").value
+#     sql_username = client.get_secret("SQLUserName").value
+#     sql_password = client.get_secret("SQLPass").value
     
-    # Construct the SQLAlchemy connection string
-    connection_string = f"mssql+pymssql://{sql_username}:{sql_password}@{sql_server_name}/{database_name}"
-    engine = create_engine(connection_string)
+#     # Construct the SQLAlchemy connection string
+#     connection_string = f"mssql+pymssql://{sql_username}:{sql_password}@{sql_server_name}/{database_name}"
+#     engine = create_engine(connection_string)
 
-    # Connect to Azure Blob Storage
-    blob_service_client = BlobServiceClient(
-        account_url=f"https://{storage_account_name}.blob.core.windows.net",
-        credential=storage_account_key)
-    container_client = blob_service_client.get_container_client(container_name)
-    logging.info(f"container_client:{container_client}")
+#     # Connect to Azure Blob Storage
+#     blob_service_client = BlobServiceClient(
+#         account_url=f"https://{storage_account_name}.blob.core.windows.net",
+#         credential=storage_account_key)
+#     container_client = blob_service_client.get_container_client(container_name)
+#     logging.info(f"container_client:{container_client}")
 
-    def insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language):
-        title = title.replace("'", "''")
-        description = description.replace("'", "''")
-        podcast_title = podcast_title.replace("'", "''")
+#     def insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language):
+#         title = title.replace("'", "''")
+#         description = description.replace("'", "''")
+#         podcast_title = podcast_title.replace("'", "''")
 
-        try:
-            with engine.begin() as conn:
-                # Check if the item already exists
-                check_query = text("SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url")
-                result = conn.execute(check_query, {'enclosure_url': enclosure_url}).fetchone()
+#         try:
+#             with engine.begin() as conn:
+#                 # Check if the item already exists
+#                 check_query = text("SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url")
+#                 result = conn.execute(check_query, {'enclosure_url': enclosure_url}).fetchone()
                 
-                # If the item doesn't exist, insert it
-                if result is None:
-                    insert_query = text("""
-                        INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
-                        VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
-                    """)
-                    conn.execute(insert_query, {
-                        'title': title,
-                        'description': description,
-                        'pub_date': pub_date,
-                        'enclosure_url': enclosure_url,
-                        'podcast_title': podcast_title,
-                        'language': language
-                    })
-                    logging.info(f"Item inserted: {title}")
-                else:
-                    logging.info(f"Item already exists: {title}")
-        except Exception as e:
-            logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
+#                 # If the item doesn't exist, insert it
+#                 if result is None:
+#                     insert_query = text("""
+#                         INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
+#                         VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
+#                     """)
+#                     conn.execute(insert_query, {
+#                         'title': title,
+#                         'description': description,
+#                         'pub_date': pub_date,
+#                         'enclosure_url': enclosure_url,
+#                         'podcast_title': podcast_title,
+#                         'language': language
+#                     })
+#                     logging.info(f"Item inserted: {title}")
+#                 else:
+#                     logging.info(f"Item already exists: {title}")
+#         except Exception as e:
+#             logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
     
 
-    for blob in container_client.list_blobs():
-        blob_client = container_client.get_blob_client(blob)
-        blob_content = blob_client.download_blob().readall()
-        local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
+#     for blob in container_client.list_blobs():
+#         blob_client = container_client.get_blob_client(blob)
+#         blob_content = blob_client.download_blob().readall()
+#         local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
 
-        # Write blob content to a local file
-        with open(local_path, 'wb') as file:
-            file.write(blob_content)
-            #logging.info(f"Successfully written the blob_content.")
+#         # Write blob content to a local file
+#         with open(local_path, 'wb') as file:
+#             file.write(blob_content)
+#             #logging.info(f"Successfully written the blob_content.")
 
 
-        # Load XML file
-        try:
-            tree = ET.parse(local_path)
-            root = tree.getroot()
+#         # Load XML file
+#         try:
+#             tree = ET.parse(local_path)
+#             root = tree.getroot()
 
-            # Extract podcast title and language
-            channel = root.find('.//channel')
-            podcast_title = channel.find('title').text
-            language = channel.find('language').text
+#             # Extract podcast title and language
+#             channel = root.find('.//channel')
+#             podcast_title = channel.find('title').text
+#             language = channel.find('language').text
 
-            # Process each item in the RSS feed
-            for item in channel.findall('item'):
-                title = item.find('title').text
-                description = item.find('description').text
-                pub_date = parser.parse(item.find('pubDate').text)
-                enclosure_url = item.find('enclosure').get('url')
+#             # Process each item in the RSS feed
+#             for item in channel.findall('item'):
+#                 title = item.find('title').text
+#                 description = item.find('description').text
+#                 pub_date = parser.parse(item.find('pubDate').text)
+#                 enclosure_url = item.find('enclosure').get('url')
                 
-                insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
+#                 insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
 
-            # Delete the local file after processing
-            os.remove(local_path)
+#             # Delete the local file after processing
+#             os.remove(local_path)
 
-        except Exception as e:
-            print(f"Failed to process XML file: {local_path}. Error: {e}")
+#         except Exception as e:
+#             print(f"Failed to process XML file: {local_path}. Error: {e}")
 
-    print("Function completed for all files in the container.")
+#     print("Function completed for all files in the container.")
