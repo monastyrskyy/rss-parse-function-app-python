@@ -160,6 +160,8 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
     with engine.connect() as connection:
         result = connection.execute(query)
         logging.info(f"Query executed without issues: {result}")
+        episodes = result.fetchall()  # Fetch all results at once
+        logging.info(f"Number of episodes fetched: {len(episodes)}")
         for episode in result:
             podcast_title = episode['podcast_title'].replace(' ', '-')
             logging.info(f"podcast_title: {podcast_title}")
