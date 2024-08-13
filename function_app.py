@@ -289,8 +289,6 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                         'language': language
                     })
                     logging.info(f"Item inserted: {title}")
-                else:
-                    logging.info(f"Item already exists: {title}")
         except Exception as e:
             logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
     
