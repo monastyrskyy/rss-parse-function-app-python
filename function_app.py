@@ -169,27 +169,21 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
             logging.info(f"podcast_title: {podcast_title}")
             episode_title = episode[1].replace(' ', '-') if episode[1] else 'unknown_title'
             logging.info(f"episode_title: {episode_title}")
-            rss_url = episode[5]
-            logging.info(f"rss_url: {rss_url}")
-            podcast_title = episode['podcast_title'].replace(' ', '-')
-            logging.info(f"podcast_title: {podcast_title}")
-            episode_title = episode['title'].replace(' ', '-')
-            logging.info(f"episode_title: {episode_title}")
-            rss_url = episode['link']
+            rss_url = episode[4]
             logging.info(f"rss_url: {rss_url}")
             folder_path = f"{container_name}/{podcast_title}"
             logging.info(f"folder_path: {folder_path}")
             blob_path = f"{folder_path}/{episode_title}_with_python.mp3"
             logging.info(f"blob_path: {blob_path}")
 
-        #     # Download the MP3 file
-        #     local_file_path = os.path.join('/tmp', f"{episode_title}.mp3")
-        #     logging.info(f"local_file_path: {local_file_path}")
-        #     response = requests.get(rss_url)
-        #     logging.info("URL downloaded")
-        #     with open(local_file_path, 'wb') as file:
-        #         file.write(response.content)
-        #     logging.info("MP3 file written locally")
+            # Download the MP3 file
+            local_file_path = os.path.join('/tmp', f"{episode_title}.mp3")
+            logging.info(f"local_file_path: {local_file_path}")
+            response = requests.get(rss_url)
+            logging.info("URL downloaded")
+            with open(local_file_path, 'wb') as file:
+                file.write(response.content)
+            logging.info("MP3 file written locally")
 
         #     # Upload the MP3 file to Azure Blob Storage
         #     blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_path)
