@@ -130,8 +130,7 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
 
     # Retrieve secrets from Azure Key Vault
     storage_account_name = client.get_secret("storageAccountName").value
-    storage_account_key = client.get_secret("storageAccountKey").value
-    container_name = "xml"  # Assuming you meant 'xml' as per your block, not 'mp3' from previous examples
+    container_name = "mp3"
     sql_server_name = client.get_secret("SQLServerName").value
     database_name = client.get_secret("DBName").value
     sql_username = client.get_secret("SQLUserName").value
@@ -145,9 +144,6 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
     blob_service_client = BlobServiceClient(
         account_url=f"https://{storage_account_name}.blob.core.windows.net/",
         credential=credential)
-    container_client = blob_service_client.get_container_client(container_name)
-    if not container_client.exists():
-        container_client.create_container()
     logging.info(f"Blob container client initialized for container: {container_name}")
 
     # Query for episodes
