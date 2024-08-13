@@ -12,6 +12,8 @@ import azure.functions as func
 from dateutil import parser
 
 logging.basicConfig(level=logging.WARNING)
+logging.getLogger('azure.core.pipeline.policies').setLevel(logging.WARNING)
+logging.getLogger('azure.core.pipeline.transport').setLevel(logging.WARNING)
 
 app = func.FunctionApp()
 
@@ -173,7 +175,7 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
             logging.info(f"rss_url: {rss_url}")
             folder_path = f"{container_name}/{podcast_title}"
             logging.info(f"folder_path: {folder_path}")
-            blob_path = f"{folder_path}/{episode_title}_with_python.mp3"
+            blob_path = f"with_python/{folder_path}/{episode_title}_with_python.mp3"
             logging.info(f"blob_path: {blob_path}")
 
             # Download the MP3 file
@@ -185,12 +187,12 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
                 file.write(response.content)
             logging.info("MP3 file written locally")
 
-        #     # Upload the MP3 file to Azure Blob Storage
-        #     blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_path)
-        #     logging.info(f"blob_client for uploading: {blob_client}")
-        #     with open(local_file_path, "rb") as data:
-        #         blob_client.upload_blob(data, overwrite=True)
-        #     logging.info("blob_client uploaded to blob storage")
+            # Upload the MP3 file to Azure Blob Storage
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_path)
+            logging.info(f"blob_client for uploading: {blob_client}")
+            with open(local_file_path, "rb") as data:
+                blob_client.upload_blob(data, overwrite=True)
+            logging.info("blob_client uploaded to blob storage")
             
         #     # Clean up the local file
         #     os.remove(local_file_path)
