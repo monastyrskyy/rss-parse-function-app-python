@@ -194,19 +194,19 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         check_query = text(f"""
         IF NOT EXISTS (SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url)
         BEGIN
-            INSERT INTO rss_schema.rss_feed_python (title, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
-            VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
+            INSERT INTO rss_schema.rss_feed_python (title)--, description, pubDate, link, parse_dt, download_flag, podcast_title, language)
+            VALUES (:title)--, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
         END
         """)
         try:
             with engine.connect() as conn:
                 conn.execute(check_query, {
-                    'title': title,
-                    'description': description,
-                    'pub_date': pub_date,
-                    'enclosure_url': enclosure_url,
-                    'podcast_title': podcast_title,
-                    'language': language
+                    'title': title#,
+                    # 'description': description,
+                    # 'pub_date': pub_date,
+                    # 'enclosure_url': enclosure_url,
+                    # 'podcast_title': podcast_title,
+                    # 'language': language
                 })
             logging.info(f"Item inserted or already exists: {title}")
         except Exception as e:
@@ -243,14 +243,13 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 title = item.find('title').text
                 logging.info(f"title:{title}")
                 description = item.find('description').text
-                logging.info(f"description:{description}")
                 pub_date = parser.parse(item.find('pubDate').text)
                 logging.info(f"pub_date:{pub_date}")
                 enclosure_url = item.find('enclosure').get('url')
                 logging.info(f"enclosure_url:{enclosure_url}")
                 
-
                 insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
+                logging.info("This is the line right after the inser_rss_item invocation.")
 
             # Delete the local file after processing
             os.remove(local_path)
