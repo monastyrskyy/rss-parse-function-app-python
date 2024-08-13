@@ -192,7 +192,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         podcast_title = podcast_title.replace("'", "''")
 
         try:
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 # Check if the item already exists
                 check_query = text("SELECT 1 FROM rss_schema.rss_feed_python WHERE link = :enclosure_url")
                 result = conn.execute(check_query, {'enclosure_url': enclosure_url}).fetchone()
