@@ -117,7 +117,7 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
     
     
     
-@app.timer_trigger(schedule="0 0 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
+@app.timer_trigger(schedule="*/10 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
 def mp3_download(myTimer: func.TimerRequest) -> None:
 
     logging.info("MP3 download function started...")
@@ -151,7 +151,7 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
     SELECT TOP 1 *
     FROM rss_schema.rss_feed
     WHERE download_flag_azure = 'N'
-    ORDER BY pubDate DESC;
+    ORDER BY NEWID(), pubDate DESC;
     """)
     logging.info("Query defined without issues.")
 
