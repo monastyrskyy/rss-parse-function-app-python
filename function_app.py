@@ -57,7 +57,7 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
     try:
         engine = create_engine(connection_string)
         with engine.connect() as conn:
-            query = text("SELECT podcast_name, rss_url FROM dbo.rss_urls")
+            query = text("SELECT podcast_name, rss_url FROM dbo.rss_urls WHERE daily_refresh_paused = 'N'")
             result = conn.execute(query)
             podcasts = result.fetchall()
 
