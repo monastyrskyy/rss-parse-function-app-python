@@ -147,11 +147,22 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
     logging.info(f"Blob container client initialized for container: {container_name}")
 
     # Query for episodes
+    # First picking a randnom podcast, then the most recent episodes there
     query = text("""
     SELECT TOP 1 *
     FROM rss_schema.rss_feed
-    WHERE download_flag_azure = 'N'
-    ORDER BY NEWID(), pubDate DESC;
+    WHERE podcast_title = (
+        SELECT TOP 1 podcast_title
+        FROM (
+            SELECT DISTINCT podcast_title
+            FROM rss_schema.rss_feed
+            WHERE download_flag_azure = 'N'
+        ) AS distinct_podcasts
+        ORDER BY NEWID()
+    )
+    AND download_flag_azure = 'N'
+    ORDER BY pubDate DESC;
+
     """)
     logging.info("Query defined without issues.")
 
