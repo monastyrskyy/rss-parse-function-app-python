@@ -349,7 +349,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             channel = root.find('.//channel')
             podcast_title = channel.find('title').text
             language = channel.find('language').text
-            logging.info( podcast_title, language, 'AAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHH')
+            logging.info(f"{podcast_title}, {language}, {'AAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHH'}")
 
             # Process each item in the RSS feed
             for item in channel.findall('item'):
