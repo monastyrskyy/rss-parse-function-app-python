@@ -3,7 +3,7 @@ import logging
 import requests
 import azure.functions as func
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.storage.blob import BlobServiceClient, BlobClient
@@ -300,8 +300,8 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
 
     # Get today's date and calculate yesterday's date for comparison
-    today = datetime.date.today()
-    yesterday = today - datetime.timedelta(days=1)
+    today = date.today()
+    yesterday = today - timedelta(days=1)
 
     # Retrieve the list of podcasts to be processed
     with engine.connect() as conn:
