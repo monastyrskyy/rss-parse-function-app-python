@@ -238,7 +238,6 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
 
 
 
-
 @app.timer_trigger(schedule="0 0 5 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
 def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
 
@@ -271,7 +270,11 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     container_client = blob_service_client.get_container_client(container_name)
     logging.info(f"container_client:{container_client}")
 
-    def insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language):
+    # List to store RSS items for batch insertion
+    rss_items_batch = []
+
+    def add_rss_item_to_batch(title, description, pub_date, enclosure_url, podcast_title, language):
+        # Sanitize the fields
         title = re.sub(r'[^\w\-_\. ]', '_', title.replace("'", "''"))
         description = description.replace("'", "''")
         podcast_title = re.sub(r'[^\w\-_\. ]', '_', podcast_title.replace("'", "''"))
@@ -279,16 +282,12 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         try:
             with engine.begin() as conn:
                 # Check if the item already exists
-                check_query = text("SELECT 1 FROM rss_schema.rss_feed WHERE link = :enclosure_url")
+                check_query = text("SELECT 1 FROM rss_schema.rss_feed_dev WHERE link = :enclosure_url")
                 result = conn.execute(check_query, {'enclosure_url': enclosure_url}).fetchone()
                 
-                # If the item doesn't exist, insert it
+                # If it doesn't exist, add it to the batch
                 if result is None:
-                    insert_query = text("""
-                        INSERT INTO rss_schema.rss_feed (title, description, pubDate, link, parse_dt, download_flag_azure, podcast_title, language)
-                        VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
-                    """)
-                    conn.execute(insert_query, {
+                    rss_items_batch.append({
                         'title': title,
                         'description': description,
                         'pub_date': pub_date,
@@ -296,10 +295,32 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                         'podcast_title': podcast_title,
                         'language': language
                     })
-                    logging.info(f"Item inserted: {title}")
+                else:
+                    logging.info(f"Item already exists: {title}")
+        
         except Exception as e:
-            logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
-    
+            logging.error(f"Failed to check item: {title}. Error: {str(e)}")
+
+    def bulk_insert_rss_items():
+        if not rss_items_batch:
+            return
+
+        try:
+            with engine.begin() as conn:
+                insert_query = text("""
+                    INSERT INTO rss_schema.rss_feed_dev (title, description, pubDate, link, parse_dt, download_flag_azure, podcast_title, language)
+                    VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
+                """)
+                conn.execute(insert_query, rss_items_batch)
+                logging.info(f"{len(rss_items_batch)} items inserted in bulk.")
+        except Exception as e:
+            logging.error(f"Failed to insert batch items. Error: {str(e)}")
+        finally:
+            # Clear the batch list after insert
+            rss_items_batch.clear()
+
+
+
 
     for blob in container_client.list_blobs():
         blob_client = container_client.get_blob_client(blob)
@@ -309,8 +330,6 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         # Write blob content to a local file
         with open(local_path, 'wb') as file:
             file.write(blob_content)
-            #logging.info(f"Successfully written the blob_content.")
-
 
         # Load XML file
         try:
@@ -329,12 +348,18 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 pub_date = parser.parse(item.find('pubDate').text)
                 enclosure_url = item.find('enclosure').get('url')
                 
-                insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
+                add_rss_item_to_batch(title, description, pub_date, enclosure_url, podcast_title, language)
+
+            # Bulk insert after processing the blob
+            bulk_insert_rss_items()
 
             # Delete the local file after processing
             os.remove(local_path)
 
         except Exception as e:
-            print(f"Failed to process XML file: {local_path}. Error: {e}")
+            logging.error(f"Failed to process XML file: {local_path}. Error: {e}")
+
+    # Ensure any remaining items are inserted
+    bulk_insert_rss_items()
 
     print("Function completed for all files in the container.")
