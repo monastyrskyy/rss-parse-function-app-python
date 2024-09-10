@@ -10,3 +10,4 @@ requests
 SQLAlchemy
 pymssql
 python-dateutil
+pandas
