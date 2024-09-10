@@ -311,6 +311,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     query = "SELECT TOP 1 * \
             FROM dbo.rss_urls \
             WHERE last_parsed < CAST(GETDATE() AS DATE) \
+            AND daily_refresh_paused = 'N' \
             ORDER BY NEWID()"
 
     # Execute the query and fetch the result
