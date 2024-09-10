@@ -322,7 +322,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             ORDER BY last_parsed ASC
         """)
         podcasts = conn.execute(fetch_podcasts_query).fetchall()
-
+    logging.info('AHHHH!2')
     if not podcasts:
         logging.info("No podcasts left to parse.")
         return
@@ -339,7 +339,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 blob_client = container_client.get_blob_client(blob)
                 blob_content = blob_client.download_blob().readall()
                 local_path = f"/tmp/{blob.name}"
-
+                logging.info('AHHHH!1')
                 # Write the blob content to a local file
                 with open(local_path, 'wb') as file:
                     file.write(blob_content)
@@ -369,6 +369,8 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                     # Insert RSS feed episode into the database
                     insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
 
+                logging.info('AAHHHHHH!')
+                
                 # Update last_parsed for the podcast
                 with engine.begin() as conn:
                     update_query = text("""
