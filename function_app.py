@@ -272,9 +272,9 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     logging.info(f"container_client:{container_client}")
 
     def insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language):
-        title = title.replace("'", "''")
+        title = re.sub(r'[^\w\-_\. ]', '_', title.replace("'", "''"))
         description = description.replace("'", "''")
-        podcast_title = podcast_title.replace("'", "''")
+        podcast_title = re.sub(r'[^\w\-_\. ]', '_', podcast_title.replace("'", "''"))
 
         try:
             with engine.begin() as conn:
