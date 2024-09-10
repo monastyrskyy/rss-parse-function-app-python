@@ -243,7 +243,7 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
 @app.timer_trigger(schedule="0 0 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
 def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
 
-    print("reading_in_rss_and_writing_to_sql Function started...")
+    logging.info("reading_in_rss_and_writing_to_sql Function started...")
 
     # Azure Key Vault configuration
     key_vault_name = os.environ["MyKeyVault"]
@@ -317,7 +317,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     with engine.connect() as connection:
         df = pd.read_sql(query, engine)
 
-    print(df[0:10])
+    logging.info(df[0:10])
 
 
 
@@ -326,11 +326,11 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
 
     for blob in container_client.list_blobs():
         if blob.name.replace('.xml', '') == df.iloc[0]['podcast_name'].replace(' ', '_'):
-            print(blob.name)
-            print(df.iloc[0]['podcast_name'].replace(' ', '_'))
-            print('     ')
-            print('     ')
-            print('     ')
+            logging.info(blob.name)
+            logging.info(df.iloc[0]['podcast_name'].replace(' ', '_'))
+            logging.info('     ')
+            logging.info('     ')
+            logging.info('     ')
             blob_client = container_client.get_blob_client(blob)
             blob_content = blob_client.download_blob().readall()
             local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
@@ -348,7 +348,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             channel = root.find('.//channel')
             podcast_title = channel.find('title').text
             language = channel.find('language').text
-            print( podcast_title, language, 'AAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHH')
+            logging.info( podcast_title, language, 'AAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHH')
 
             # Process each item in the RSS feed
             for item in channel.findall('item'):
@@ -376,7 +376,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
 
     # Get today's date
     today = datetime.now().date()
-    print(today)
+    logging.info(today)
 
     # SQL query to update the last_parsed field for the pulled record
     update_query = f"""
@@ -389,4 +389,4 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     with engine.begin() as connection:
         connection.execute(text(update_query))
 
-    print(f"Updated record with id {podcast_id}, set last_parsed to {today}")
+    logging.info(f"Updated record with id {podcast_id}, set last_parsed to {today}")
