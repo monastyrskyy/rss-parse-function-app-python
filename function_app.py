@@ -299,17 +299,13 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         except Exception as e:
             logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
 
-    # Get today's date and calculate yesterday's date for comparison
-    today = date.today()
-    yesterday = today - timedelta(days=1)
-
     # Retrieve the list of podcasts to be processed
     with engine.connect() as conn:
         result = conn.execute("""
             SELECT podcast_name, last_parsed 
             FROM dbo.rss_urls 
-            WHERE daily_refresh_paused = 'N' AND last_parsed <= :yesterday
-        """, {'yesterday': yesterday})
+            WHERE daily_refresh_paused = 'N' AND last_parsed <= DATEADD(day, -1, CAST(GETDATE() AS date)
+        """)
         
         # Create a set of podcast titles that need to be updated
         podcasts_to_update = {row['podcast_name'].replace(' ', '_') for row in result}
@@ -350,10 +346,10 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 with engine.begin() as conn:
                     update_query = text("""
                         UPDATE dbo.rss_urls
-                        SET last_parsed = :today
+                        SET last_parsed = CAST(GETDATE() AS date)
                         WHERE podcast_name = :podcast_title
                     """)
-                    conn.execute(update_query, {'today': today, 'podcast_title': podcast_title.replace('_', ' ')})
+                    conn.execute(update_query, {'podcast_title': podcast_title.replace('_', ' ')})
 
                 os.remove(local_path)  # Clean up local file after processing
 
