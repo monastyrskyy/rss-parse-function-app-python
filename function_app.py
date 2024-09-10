@@ -298,64 +298,42 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                     logging.info(f"Item inserted: {title}")
         except Exception as e:
             logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
+    
 
-    # Retrieve the list of podcasts to be processed
-    with engine.connect() as conn:
-        result = conn.execute("""
-            SELECT podcast_name, last_parsed 
-            FROM dbo.rss_urls 
-            WHERE daily_refresh_paused = 'N' AND last_parsed <= DATEADD(day, -1, CAST(GETDATE() AS date)
-        """)
-        
-        # Create a set of podcast titles that need to be updated
-        podcasts_to_update = {row['podcast_name'].replace(' ', '_') for row in result}
-        podcasts_to_update = podcasts_to_update[0] # just one at a time
-        
-    # Process each blob only if it needs updating
     for blob in container_client.list_blobs():
-        blob_podcast_title = blob.name[:-4]  # Assuming blob names have '.xml' at the end
-        print(f'blob_podcast_title on blob: {blob_podcast_title}')
-        print(f'from the rss_urls: {podcasts_to_update}')
-        if blob_podcast_title in podcasts_to_update:
-            blob_client = container_client.get_blob_client(blob)
-            blob_content = blob_client.download_blob().readall()
-            local_path = f"/tmp/{blob.name}"
+        blob_client = container_client.get_blob_client(blob)
+        blob_content = blob_client.download_blob().readall()
+        local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
 
-            with open(local_path, 'wb') as file:
-                file.write(blob_content)
+        # Write blob content to a local file
+        with open(local_path, 'wb') as file:
+            file.write(blob_content)
+            #logging.info(f"Successfully written the blob_content.")
 
-            # Load XML file and parse items
-            try:
-                tree = ET.parse(local_path)
-                root = tree.getroot()
+
+        # Load XML file
+        try:
+            tree = ET.parse(local_path)
+            root = tree.getroot()
 
             # Extract podcast title and language
-                channel = root.find('.//channel')
-                podcast_title = channel.find('title').text
-                language = channel.find('language').text
+            channel = root.find('.//channel')
+            podcast_title = channel.find('title').text
+            language = channel.find('language').text
 
-                for item in channel.findall('item'):
-                    title = item.find('title').text
-                    description = item.find('description').text
-                    pub_date = parser.parse(item.find('pubDate').text)
-                    enclosure_url = item.find('enclosure').get('url')
-                    
-                    insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language, engine)
+            # Process each item in the RSS feed
+            for item in channel.findall('item'):
+                title = item.find('title').text
+                description = item.find('description').text
+                pub_date = parser.parse(item.find('pubDate').text)
+                enclosure_url = item.find('enclosure').get('url')
+                
+                insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
 
-                # Update the last_parsed date in the database
-                with engine.begin() as conn:
-                    update_query = text("""
-                        UPDATE dbo.rss_urls
-                        SET last_parsed = CAST(GETDATE() AS date)
-                        WHERE podcast_name = :podcast_title
-                    """)
-                    conn.execute(update_query, {'podcast_title': podcast_title.replace('_', ' ')})
+            # Delete the local file after processing
+            os.remove(local_path)
 
-                os.remove(local_path)  # Clean up local file after processing
+        except Exception as e:
+            print(f"Failed to process XML file: {local_path}. Error: {e}")
 
-            except Exception as e:
-                logging.error(f"Failed to process XML file: {local_path}. Error: {str(e)}")
-
-    print("Function completed for necessary files.")
-
-    
+    print("Function completed for all files in the container.")
