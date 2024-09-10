@@ -10,6 +10,7 @@ from azure.storage.blob import BlobServiceClient, BlobClient
 from sqlalchemy import create_engine, text
 import azure.functions as func
 from dateutil import parser
+import re
 
 app = func.FunctionApp()
 
@@ -174,9 +175,9 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
         logging.info(f"Episodes: {episodes}")
         for episode in episodes:
             logging.info("first nest")
-            podcast_title = episode[10].replace(' ', '-') if episode[10] else 'unknown_podcast'
+            podcast_title = re.sub(r'[^\w\-_\. ]', '_', episode[10].replace(' ', '-')) if episode[10] else 'unknown_podcast'
             logging.info(f"podcast_title: {podcast_title}")
-            episode_title = episode[1].replace(' ', '-') if episode[1] else 'unknown_title'
+            episode_title = re.sub(r'[^\w\-_\. ]', '_', episode[1].replace(' ', '-')) if episode[1] else 'unknown_title'
             logging.info(f"episode_title: {episode_title}")
             rss_url = episode[4]
             logging.info(f"rss_url: {rss_url}")
