@@ -283,19 +283,24 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 result = conn.execute(check_query, {'enclosure_url': enclosure_url}).fetchone()
                 
                 if result is None:
-                    insert_query = text("""
-                        INSERT INTO rss_schema.rss_feed_dev
-                        (title, description, pubDate, link, parse_dt, download_flag_azure, podcast_title, language)
-                        VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
-                    """)
-                    conn.execute(insert_query, {
-                        'title': title,
-                        'description': description,
-                        'pub_date': pub_date,
-                        'enclosure_url': enclosure_url,
-                        'podcast_title': podcast_title,
-                        'language': language
-                    })
+                    try:
+                        insert_query = text("""
+                            INSERT INTO rss_schema.rss_feed_dev
+                            (title, description, pubDate, link, parse_dt, download_flag_azure, podcast_title, language)
+                            VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
+                        """)
+                        conn.execute(insert_query, {
+                            'title': title,
+                            'description': description,
+                            'pub_date': pub_date,
+                            'enclosure_url': enclosure_url,
+                            'podcast_title': podcast_title,
+                            'language': language
+                        })
+                    except Exception as e:
+                        logging.error(f"Error inserting into SQL for podcast: {podcast_name}. Error: {e}")
+                        return
+
                     update_query = text("""
                         UPDATE rss_schema.rss_feed_dev
                         SET last_parsed = CONVERT(date, GETDATE()) 
@@ -341,7 +346,12 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                     logging.info(f"Downloaded XML blob for podcast: {podcast_name}")
 
                 # Load the XML and parse episodes
-                tree = ET.parse(local_path)
+                # XML parsing
+                try:
+                    tree = ET.parse(local_path)
+                except ET.ParseError as e:
+                    logging.error(f"Error parsing XML from blob {blob.name}: {e}")
+                    return
                 root = tree.getroot()
 
                 # Extract podcast title and language
