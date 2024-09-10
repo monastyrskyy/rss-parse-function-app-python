@@ -308,8 +308,8 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         try:
             with engine.begin() as conn:
                 insert_query = text("""
-                    INSERT INTO rss_schema.rss_feed_dev (title, description, pubDate, link, parse_dt, download_flag_azure, podcast_title, language, download_flag_local)
-                    VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language, 'N')
+                    INSERT INTO rss_schema.rss_feed_dev (title, description, pubDate, link, parse_dt, download_flag_azure, podcast_title, language, download_flag_local, nouns_extraction_flag)
+                    VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language, 'N', 'N')
                 """)
                 conn.execute(insert_query, rss_items_batch)
                 logging.info(f"{len(rss_items_batch)} items inserted in bulk.")
