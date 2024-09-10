@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, text
 import azure.functions as func
 from dateutil import parser
 import re
+import pandas as pd
 
 app = func.FunctionApp()
 
