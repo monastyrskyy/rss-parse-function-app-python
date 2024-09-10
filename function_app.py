@@ -239,7 +239,7 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
 
 
 
-@app.timer_trigger(schedule="0 0 5 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
+@app.timer_trigger(schedule="0 0 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
 def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
 
     print("reading_in_rss_and_writing_to_sql Function started...")
@@ -270,9 +270,13 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     container_client = blob_service_client.get_container_client(container_name)
     logging.info(f"container_client:{container_client}")
 
+
     def insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language):
         title = re.sub(r'[^\w\-_\. ]', '_', title.replace("'", "''"))
-        description = description.replace("'", "''")
+        if description:
+            description = description.replace("'", "''")
+        else:
+            description = 'default'
         podcast_title = re.sub(r'[^\w\-_\. ]', '_', podcast_title.replace("'", "''"))
 
         try:
@@ -298,21 +302,44 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                     logging.info(f"Item inserted: {title}")
         except Exception as e:
             logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
-    
+
+
+
+    # which one should be picked?
+
+    query = "SELECT TOP 1 * \
+            FROM dbo.rss_urls \
+            WHERE last_parsed < CAST(GETDATE() AS DATE) \
+            ORDER BY NEWID()"
+
+    # Execute the query and fetch the result
+    with engine.connect() as connection:
+        df = pd.read_sql(query, engine)
+
+    print(df[0:10])
+
+
+
+
+        
 
     for blob in container_client.list_blobs():
-        blob_client = container_client.get_blob_client(blob)
-        blob_content = blob_client.download_blob().readall()
-        local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
+        if blob.name.replace('.xml', '') == df.iloc[0]['podcast_name'].replace(' ', '_'):
+            print(blob.name)
+            print(df.iloc[0]['podcast_name'].replace(' ', '_'))
+            print('     ')
+            print('     ')
+            print('     ')
+            blob_client = container_client.get_blob_client(blob)
+            blob_content = blob_client.download_blob().readall()
+            local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
 
-        # Write blob content to a local file
-        with open(local_path, 'wb') as file:
-            file.write(blob_content)
-            #logging.info(f"Successfully written the blob_content.")
+            # Write blob content to a local file
+            with open(local_path, 'wb') as file:
+                file.write(blob_content)
+                logging.info(f"Successfully written the blob_content to a local temp file.")
 
 
-        # Load XML file
-        try:
             tree = ET.parse(local_path)
             root = tree.getroot()
 
@@ -320,6 +347,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
             channel = root.find('.//channel')
             podcast_title = channel.find('title').text
             language = channel.find('language').text
+            print( podcast_title, language, 'AAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHH')
 
             # Process each item in the RSS feed
             for item in channel.findall('item'):
@@ -327,13 +355,37 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
                 description = item.find('description').text
                 pub_date = parser.parse(item.find('pubDate').text)
                 enclosure_url = item.find('enclosure').get('url')
-                
+                    
                 insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
 
             # Delete the local file after processing
             os.remove(local_path)
 
-        except Exception as e:
-            print(f"Failed to process XML file: {local_path}. Error: {e}")
+            # except Exception as e:
+            #     print(f"Failed to process XML file: {local_path}. Error: {e}")
 
-    print("Function completed for all files in the container.")
+
+
+
+
+    # Updating the record
+
+    # Assuming the primary key or a unique identifier in the table is 'id'
+    podcast_id = df.iloc[0]['podcast_id']  # Replace 'id' with the actual column name of the primary key or unique identifier
+
+    # Get today's date
+    today = datetime.now().date()
+    print(today)
+
+    # SQL query to update the last_parsed field for the pulled record
+    update_query = f"""
+        UPDATE dbo.rss_urls
+        SET last_parsed = '{today}'
+        WHERE podcast_id = {podcast_id}
+    """
+
+    # Execute the update query
+    with engine.begin() as connection:
+        connection.execute(text(update_query))
+
+    print(f"Updated record with id {podcast_id}, set last_parsed to {today}")
