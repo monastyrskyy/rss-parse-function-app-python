@@ -239,8 +239,9 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
 
 
 
-@app.timer_trigger(schedule="0 0 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
+@app.timer_trigger(schedule="0 0 5 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
 def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
+
     print("reading_in_rss_and_writing_to_sql Function started...")
 
     # Azure Key Vault configuration
@@ -268,8 +269,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         account_url=f"https://{storage_account_name}.blob.core.windows.net",
         credential=storage_account_key)
     container_client = blob_service_client.get_container_client(container_name)
-    
-    logging.info(f"Connected to Azure Blob Storage container: {container_client}")
+    logging.info(f"container_client:{container_client}")
 
     def insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language):
         title = re.sub(r'[^\w\-_\. ]', '_', title.replace("'", "''"))
@@ -278,114 +278,63 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
 
         try:
             with engine.begin() as conn:
-                # Check if the episode already exists
-                check_query = text("SELECT 1 FROM rss_schema.rss_feed_dev WHERE link = :enclosure_url")
+                # Check if the item already exists
+                check_query = text("SELECT 1 FROM rss_schema.rss_feed WHERE link = :enclosure_url")
                 result = conn.execute(check_query, {'enclosure_url': enclosure_url}).fetchone()
                 
+                # If the item doesn't exist, insert it
                 if result is None:
-                    try:
-                        insert_query = text("""
-                            INSERT INTO rss_schema.rss_feed_dev
-                            (title, description, pubDate, link, parse_dt, download_flag_azure, podcast_title, language)
-                            VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
-                        """)
-                        conn.execute(insert_query, {
-                            'title': title,
-                            'description': description,
-                            'pub_date': pub_date,
-                            'enclosure_url': enclosure_url,
-                            'podcast_title': podcast_title,
-                            'language': language
-                        })
-                    except Exception as e:
-                        logging.error(f"Error inserting into SQL for podcast: {podcast_name}. Error: {e}")
-                        return
-
-                    update_query = text("""
-                        UPDATE rss_schema.rss_feed_dev
-                        SET last_parsed = CONVERT(date, GETDATE()) 
-                        WHERE link = :enclosure_url
+                    insert_query = text("""
+                        INSERT INTO rss_schema.rss_feed (title, description, pubDate, link, parse_dt, download_flag_azure, podcast_title, language)
+                        VALUES (:title, :description, :pub_date, :enclosure_url, GETDATE(), 'N', :podcast_title, :language)
                     """)
-                    conn.execute(update_query, {'enclosure_url': enclosure_url})
-                    logging.info(f"Item parsed and updated: {title}")
-                else:
-                    logging.info("No records left to parse.")
+                    conn.execute(insert_query, {
+                        'title': title,
+                        'description': description,
+                        'pub_date': pub_date,
+                        'enclosure_url': enclosure_url,
+                        'podcast_title': podcast_title,
+                        'language': language
+                    })
+                    logging.info(f"Item inserted: {title}")
         except Exception as e:
-            logging.error(f"Failed to insert episode: {title}. Error: {str(e)}")
+            logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
+    
 
-    # Fetch podcast URLs from the rss_urls table
-    with engine.begin() as conn:
-        fetch_podcasts_query = text("""
-            SELECT podcast_name, rss_url, daily_refresh_paused, last_parsed 
-            FROM rss_schema.rss_urls_dev 
-            WHERE last_parsed < CONVERT(date, GETDATE()) AND daily_refresh_paused = 'N'
-            ORDER BY last_parsed ASC
-        """)
-        podcasts = conn.execute(fetch_podcasts_query).fetchall()
-    logging.info('AHHHH!2')
-    if not podcasts:
-        logging.info("No podcasts left to parse.")
-        return
+    for blob in container_client.list_blobs():
+        blob_client = container_client.get_blob_client(blob)
+        blob_content = blob_client.download_blob().readall()
+        local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
 
-    # Process the first podcast with last_parsed < today
-    podcast = podcasts[0]
-    podcast_name = podcast['podcast_name']
-    logging.info(f"Processing podcast: {podcast_name}")
+        # Write blob content to a local file
+        with open(local_path, 'wb') as file:
+            file.write(blob_content)
+            #logging.info(f"Successfully written the blob_content.")
 
-    # Find the corresponding XML file in Blob Storage based on the RSS URL or podcast name
-    try:
-        for blob in container_client.list_blobs():
-            if podcast_name in blob.name: 
-                blob_client = container_client.get_blob_client(blob)
-                blob_content = blob_client.download_blob().readall()
-                local_path = f"/tmp/{blob.name}"
-                logging.info('AHHHH!1')
-                # Write the blob content to a local file
-                with open(local_path, 'wb') as file:
-                    file.write(blob_content)
-                    logging.info(f"Downloaded XML blob for podcast: {podcast_name}")
 
-                # Load the XML and parse episodes
-                # XML parsing
-                try:
-                    tree = ET.parse(local_path)
-                except ET.ParseError as e:
-                    logging.error(f"Error parsing XML from blob {blob.name}: {e}")
-                    return
-                root = tree.getroot()
+        # Load XML file
+        try:
+            tree = ET.parse(local_path)
+            root = tree.getroot()
 
-                # Extract podcast title and language
-                channel = root.find('.//channel')
-                podcast_title = channel.find('title').text
-                language = channel.find('language').text
+            # Extract podcast title and language
+            channel = root.find('.//channel')
+            podcast_title = channel.find('title').text
+            language = channel.find('language').text
 
-                # Process each episode in the RSS feed
-                for item in channel.findall('item'):
-                    title = item.find('title').text
-                    description = item.find('description').text
-                    pub_date = parser.parse(item.find('pubDate').text)
-                    enclosure_url = item.find('enclosure').get('url')
-
-                    # Insert RSS feed episode into the database
-                    insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
-
-                logging.info('AAHHHHHH!')
+            # Process each item in the RSS feed
+            for item in channel.findall('item'):
+                title = item.find('title').text
+                description = item.find('description').text
+                pub_date = parser.parse(item.find('pubDate').text)
+                enclosure_url = item.find('enclosure').get('url')
                 
-                # Update last_parsed for the podcast
-                with engine.begin() as conn:
-                    update_query = text("""
-                        UPDATE rss_schema.rss_urls_dev 
-                        SET last_parsed = CONVERT(date, GETDATE()) 
-                        WHERE podcast_name = :podcast_name
-                    """)
-                    conn.execute(update_query, {'podcast_name': podcast_name})
-                    logging.info(f"Updated last_parsed for podcast: {podcast_name}")
+                insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
 
-                # Delete the local file after processing
-                os.remove(local_path)
-                break  # Process only one podcast per run
+            # Delete the local file after processing
+            os.remove(local_path)
 
-    except Exception as e:
-        print(f"Failed to process XML file: {local_path}. Error: {e}")
+        except Exception as e:
+            print(f"Failed to process XML file: {local_path}. Error: {e}")
 
-    print("Function completed for {podcast_name}.")
+    print("Function completed for all files in the container.")
