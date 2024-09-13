@@ -11,3 +11,4 @@ SQLAlchemy
 pymssql
 python-dateutil
 pandas
+pytest
