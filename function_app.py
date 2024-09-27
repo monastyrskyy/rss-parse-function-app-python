@@ -17,42 +17,21 @@ app = func.FunctionApp()
 
 @app.schedule(schedule="0 0 3 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
 def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
-
     logging.info('Starting rss_refresh_daily')
 
-    # Setup Azure credential
+    # Setting up connection to Azure
     credential = DefaultAzureCredential()
     key_vault_name = os.environ["MyKeyVault"]
     key_vault_uri = f"https://{key_vault_name}.vault.azure.net/"
-    
-    logging.info(f"Key vault name fetched: {key_vault_name}")
-
-    # Create a secret client
     client = SecretClient(vault_url=key_vault_uri, credential=credential)
     logging.info(f"Connected to client: {client}")
-
-    try:
-        # Fetch secrets from Azure Key Vault
-        server_name = client.get_secret("SQLServerName").value
-        database_name = client.get_secret("DBName").value
-        username = client.get_secret("SQLUserName").value
-        password = client.get_secret("SQLPass").value
-        storage_account_name = client.get_secret("storageAccountName").value
-        storage_account_key = client.get_secret("storageAccountKey").value
-
-        logging.info(f"server_name: {server_name}")
-        logging.info(f"database_name: {database_name}")
-        logging.info(f"username: {username}")
-        logging.info(f"password: {password}")
-        logging.info(f"storage_account_name: {storage_account_name}")
-        logging.info(f"storage_account_key: {storage_account_key}")
-        
-        logging.info("Fetched database connection details from Key Vault successfully.")
-    except Exception as e:
-        logging.error(f"Failed to fetch secrets from Key Vault. Error: {str(e)}")
-        raise
-
-    # Construct the SQLAlchemy connection string
+    server_name = client.get_secret("SQLServerName").value
+    database_name = client.get_secret("DBName").value
+    username = client.get_secret("SQLUserName").value
+    password = client.get_secret("SQLPass").value
+    storage_account_name = client.get_secret("storageAccountName").value
+    storage_account_key = client.get_secret("storageAccountKey").value
+    logging.info("Fetched database connection details from Key Vault successfully.")
     connection_string = f"mssql+pymssql://{username}:{password}@{server_name}/{database_name}"
 
     # Connect to SQL Database using SQLAlchemy
@@ -72,6 +51,7 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
     for podcast_name, rss_url in podcasts:
         safe_podcast_name = podcast_name.replace(' ', '_')
         try:
+            # Download the podcast to the function app's storage
             local_filename = os.path.join("/tmp", f"{safe_podcast_name}.xml")
             response = requests.get(rss_url)
             with open(local_filename, 'wb') as file:
