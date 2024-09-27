@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, text
 import azure.functions as func
 from dateutil import parser
 import re
+import random
 
 app = func.FunctionApp()
 
@@ -299,41 +300,42 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         except Exception as e:
             logging.error(f"Failed to insert item: {title}. Error: {str(e)}")
     
+    
+    blob_list = list(container_client.list_blobs())
+    blob = random.choice(blob_list)
+    blob_client = container_client.get_blob_client(blob)
+    blob_content = blob_client.download_blob().readall()
+    local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
 
-    for blob in container_client.list_blobs():
-        blob_client = container_client.get_blob_client(blob)
-        blob_content = blob_client.download_blob().readall()
-        local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
-
-        # Write blob content to a local file
-        with open(local_path, 'wb') as file:
-            file.write(blob_content)
-            #logging.info(f"Successfully written the blob_content.")
+    # Write blob content to a local file
+    with open(local_path, 'wb') as file:
+        file.write(blob_content)
+        #logging.info(f"Successfully written the blob_content.")
 
 
-        # Load XML file
-        try:
-            tree = ET.parse(local_path)
-            root = tree.getroot()
+    # Load XML file
+    try:
+        tree = ET.parse(local_path)
+        root = tree.getroot()
 
-            # Extract podcast title and language
-            channel = root.find('.//channel')
-            podcast_title = channel.find('title').text
-            language = channel.find('language').text
+        # Extract podcast title and language
+        channel = root.find('.//channel')
+        podcast_title = channel.find('title').text
+        language = channel.find('language').text
 
-            # Process each item in the RSS feed
-            for item in channel.findall('item'):
-                title = item.find('title').text
-                description = item.find('description').text
-                pub_date = parser.parse(item.find('pubDate').text)
-                enclosure_url = item.find('enclosure').get('url')
-                
-                insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
+        # Process each item in the RSS feed
+        for item in channel.findall('item'):
+            title = item.find('title').text
+            description = item.find('description').text
+            pub_date = parser.parse(item.find('pubDate').text)
+            enclosure_url = item.find('enclosure').get('url')
+            
+            insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
 
-            # Delete the local file after processing
-            os.remove(local_path)
+        # Delete the local file after processing
+        os.remove(local_path)
 
-        except Exception as e:
-            print(f"Failed to process XML file: {local_path}. Error: {e}")
+    except Exception as e:
+        print(f"Failed to process XML file: {local_path}. Error: {e}")
 
     print("Function completed for all files in the container.")
