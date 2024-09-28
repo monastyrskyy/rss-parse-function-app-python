@@ -287,6 +287,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     logging.info(f'here is the name of the blob: {blob.name}')
     blob_client = container_client.get_blob_client(blob)
     blob_content = blob_client.download_blob().readall()
+    logging.info(f"Blob size: {len(blob_content)} bytes")
     local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
 
     # Write blob content to a local file
@@ -308,6 +309,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         # Process each item in the RSS feed
         for item in channel.findall('item'):
             title = item.find('title').text
+            logging.info(title)
             description = item.find('description').text
             pub_date = parser.parse(item.find('pubDate').text)
             enclosure_url = item.find('enclosure').get('url')
