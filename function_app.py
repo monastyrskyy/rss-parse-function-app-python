@@ -282,6 +282,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     
     
     blob_list = list(container_client.list_blobs())
+    blob_list = [blob for blob in blob_list if "Uplink" in blob.name] # temporary
     blob = random.choice(blob_list)
     blob_client = container_client.get_blob_client(blob)
     blob_content = blob_client.download_blob().readall()
