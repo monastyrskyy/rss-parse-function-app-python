@@ -253,7 +253,10 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
 
     def insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language):
         title = re.sub(r'[^\w\-_\. ]', '_', title.replace("'", "''"))
-        description = description.replace("'", "''")
+        try:
+            description = description.replace("'", "''")
+        except:
+            description = 'No description.'
         podcast_title = re.sub(r'[^\w\-_\. ]', '_', podcast_title.replace("'", "''"))
 
         try:
