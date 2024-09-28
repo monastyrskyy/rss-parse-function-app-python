@@ -307,19 +307,21 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         language = channel.find('language').text
 
         # Process each item in the RSS feed
+        logging.info(f"Total number of items found: {len(channel.findall('item'))}")
         for item in channel.findall('item'):
-            title = item.find('title').text
-            logging.info(title)
-            description = item.find('description').text
-            pub_date = parser.parse(item.find('pubDate').text)
-            enclosure_url = item.find('enclosure').get('url')
-            
-            insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
-
+            try:
+                title = item.find('title').text
+                logging.info(title)
+                description = item.find('description').text
+                pub_date = parser.parse(item.find('pubDate').text)
+                enclosure_url = item.find('enclosure').get('url')
+                insert_rss_item(title, description, pub_date, enclosure_url, podcast_title, language)
+            except Exception as e:
+                logging.info(f'Here is the error: {e}')
         # Delete the local file after processing
         os.remove(local_path)
 
     except Exception as e:
-        print(f"Failed to process XML file: {local_path}. Error: {e}")
+        logging.info(f"Failed to process XML file: {local_path}. Error: {e}")
 
-    print("Function completed for all files in the container.")
+    logging.info("Function completed for all files in the container.")
