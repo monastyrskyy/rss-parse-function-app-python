@@ -283,9 +283,9 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
     
     blob_list = list(container_client.list_blobs())
     blob = random.choice(blob_list)
-    logging.info(f'here is the name of the blob: {blob.name}')
     blob_client = container_client.get_blob_client(blob)
     blob_content = blob_client.download_blob().readall()
+    logging.info(f'Podcast title / RSS Feed / XML File: {blob.name}')
     logging.info(f"Blob size: {len(blob_content)} bytes")
     local_path = f"/tmp/{blob.name}"  # Correcting the path to use /tmp directory
 
