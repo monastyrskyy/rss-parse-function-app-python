@@ -310,7 +310,7 @@ def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
         for item in channel.findall('item'):
             try:
                 title = item.find('title').text
-                logging.info(title)
+                logging.info(f'Episode title: {title}')
                 description = item.find('description').text
                 pub_date = parser.parse(item.find('pubDate').text)
                 enclosure_url = item.find('enclosure').get('url')
