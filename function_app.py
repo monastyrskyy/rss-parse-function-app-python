@@ -99,7 +99,7 @@ def rss_refresh_daily(myTimer: func.TimerRequest) -> None:
     
     
     
-@app.timer_trigger(schedule="*/10 * * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
+@app.timer_trigger(schedule="* */20 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
 def mp3_download(myTimer: func.TimerRequest) -> None:
 
     logging.info("MP3 download function started...")
@@ -220,7 +220,7 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
 
 
 
-@app.timer_trigger(schedule="* */5 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
+@app.timer_trigger(schedule="* */20 * * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False)
 def reading_in_rss_and_writing_to_sql(myTimer: func.TimerRequest) -> None:
 
     print("reading_in_rss_and_writing_to_sql Function started...")
