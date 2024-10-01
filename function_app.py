@@ -167,32 +167,36 @@ def mp3_download(myTimer: func.TimerRequest) -> None:
             blob_path = f"{folder_path}/{episode_title}.mp3"
             logging.info(f"blob_path: {blob_path}")
 
-            # Download the MP3 file
-            local_file_path = os.path.join('/tmp', f"{episode_title}.mp3")
-            logging.info(f"local_file_path: {local_file_path}")
-            response = requests.get(rss_url)
-            logging.info("URL downloaded")
-            with open(local_file_path, 'wb') as file:
-                file.write(response.content)
-            logging.info("MP3 file written locally")
-
-            # Upload the MP3 file to Azure Blob Storage
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_path)
-            logging.info(f"blob_client for uploading: {blob_client}")
-            with open(local_file_path, "rb") as data:
-                blob_client.upload_blob(data, overwrite=True)
-            logging.info("blob_client uploaded to blob storage")
             
-            # Clean up the local file
-            os.remove(local_file_path)
-            logging.info("file removed locally")
+            if 'megaphone' in rss_url or 'anchor' in rss_url: # these are spotify links, and should not be downloaded
+                pass
+            else:
+                # Download the MP3 file
+                local_file_path = os.path.join('/tmp', f"{episode_title}.mp3")
+                logging.info(f"local_file_path: {local_file_path}")
+                response = requests.get(rss_url)
+                logging.info("URL downloaded")
+                with open(local_file_path, 'wb') as file:
+                    file.write(response.content)
+                logging.info("MP3 file written locally")
 
-            # Update SQL database
-            update_query = text(f"""
-            UPDATE rss_schema.rss_feed SET download_flag_azure = 'Y', download_dt_azure = GETDATE() WHERE id = {episode[0]};
-            """)
-            connection.execute(update_query, {'rss_url': rss_url})
-            logging.info("query updated")
+                # Upload the MP3 file to Azure Blob Storage
+                blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_path)
+                logging.info(f"blob_client for uploading: {blob_client}")
+                with open(local_file_path, "rb") as data:
+                    blob_client.upload_blob(data, overwrite=True)
+                logging.info("blob_client uploaded to blob storage")
+                
+                # Clean up the local file
+                os.remove(local_file_path)
+                logging.info("file removed locally")
+
+                # Update SQL database
+                update_query = text(f"""
+                UPDATE rss_schema.rss_feed SET download_flag_azure = 'Y', download_dt_azure = GETDATE() WHERE id = {episode[0]};
+                """)
+                connection.execute(update_query, {'rss_url': rss_url})
+                logging.info("query updated")
 
     logging.info("Process completed successfully.")
 
